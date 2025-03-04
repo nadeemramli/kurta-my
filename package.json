@@ -11,7 +11,7 @@
   "devDependencies": {
     "@turbo/gen": "^1.12.4",
     "prettier": "^3.2.5",
-    "turbo": "^1.12.4"
+    "turbo": "^2.4.4"
   },
   "packageManager": "yarn@4.7.0",
   "workspaces": [
