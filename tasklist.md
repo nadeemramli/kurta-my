@@ -1,0 +1,56 @@
+1. Pages to build:
+    - Home
+    - Login
+    - Register
+    - Forgot Password
+    - Reset Password
+    - Verify Email
+    - Product Listing page
+    - Product Detail page
+    - Cart page
+    - Checkout page
+    - Order History page
+    - Profile page
+    - Brand Directory page
+    - Category Directory page
+    - Subcategory Directory page
+    - Search page
+    - Contact page
+    - About page
+    - FAQ page
+    - Terms of Service page
+    - Privacy Policy page
+    - Return Policy page
+    - Shipping Policy page
+    - Refund Policy page
+    - Warranty Policy page
+    - Blog/CMS page
+    - Blog Post page
+    - Blog Category page
+    - Blog Tag page
+    - Blog Author page
+    - Blog Archive page
+    - Blog Search page
+    - 404 page
+    - 500 page
+    - 403 page
+    - 401 page
+    - 400 page
+    - 408 page
+    - 409 page
+    - 429 page
+    - 502 page
+    - 503 page
+    - 504 page
+    - 505 page
+    - 506 page
+    - 410 page
+    - Cookie Policy page
+    - Sitemap page
+    - Robots.txt page
+    - RSS Feed page
+    - XML Sitemap page
+    - XML Robots.txt page
+    - XML Sitemap Index page
+    - The Kurta Loyality page
+    
