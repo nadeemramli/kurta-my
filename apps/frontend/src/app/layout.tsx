@@ -1,24 +1,35 @@
+import { CartProvider } from "@/components/cart/cart-context";
+import { Navbar } from "@/components/layout/navbar";
+import { WelcomeToast } from "@/components/welcome-toast";
 import { GeistSans } from "geist/font/sans";
-import { Viewport } from "next";
 import { ReactNode } from "react";
+import { Toaster } from "sonner";
 import "./globals.css";
+import { baseUrl } from "@/lib/utils";
+import { ClientComponents } from "./client-components";
+
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "Kurta MY";
 
 export const metadata = {
-  title: "Kurta My Store",
-  description: "Your one-stop shop for kurtas",
-};
-
-export const viewport: Viewport = {
-  themeColor: "white",
-  width: "device-width",
-  initialScale: 1,
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  robots: {
+    follow: true,
+    index: true,
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={GeistSans.className}>
-      <body className="bg-white text-black selection:bg-teal-300 dark:bg-black dark:text-white dark:selection:bg-fuchsia-600 dark:selection:text-white">
-        {children}
+    <html lang="en" className={GeistSans.variable}>
+      <body
+        suppressHydrationWarning
+        className="bg-neutral-50 text-black selection:bg-teal-300 dark:bg-neutral-900 dark:text-white dark:selection:bg-pink-500 dark:selection:text-white"
+      >
+        <ClientComponents>{children}</ClientComponents>
       </body>
     </html>
   );

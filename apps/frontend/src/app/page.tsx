@@ -1,39 +1,193 @@
-import Grid from "@/components/grid";
-import ProductGridItems from "@/components/layout/product-grid-items";
-import { defaultSort, sorting } from "@/lib/constants";
-import { mockProducts } from "@/lib/mock-data";
+import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
+import { Container } from "@/components/ui/container";
+import { Section } from "@/components/ui/section";
+import { Button } from "@/components/ui/button";
+import { ShoppingBag, Star, TrendingUp, Users } from "lucide-react";
+import Image from "next/image";
 
-export const runtime = "edge";
-
-export const metadata = {
-  title: "Search",
-  description: "Search for products in the store.",
-};
-
-export default async function HomePage() {
-  // Replace the products array with our mock data
-  // Later this will be fetched from the admin backend
-  const products = mockProducts.map((product) => ({
-    ...product,
-    images: product.images.map((image) => ({
-      ...image,
-      // Temporarily use our placeholder SVG until admin backend is ready
-      url: "/images/products/placeholder.svg",
-    })),
-  }));
-
+export default function HomePage() {
   return (
     <>
-      <div className="mx-auto flex max-w-screen-2xl flex-col gap-8 px-4 pb-4 text-black dark:text-white md:flex-row">
-        <div className="order-first w-full flex-none md:max-w-[125px]">
-          {/* Add filters here */}
+      {/* Hero Section */}
+      <div className="relative h-[calc(100vh-4rem)] w-full">
+        {/* Hero Image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/images/hero.png"
+            alt="Hero image"
+            fill
+            className="object-cover object-center"
+            priority
+          />
+          <div className="absolute inset-0 bg-black/30" />
         </div>
-        <div className="order-last min-h-screen w-full md:order-none">
-          <Grid className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            <ProductGridItems products={products} />
-          </Grid>
+
+        {/* Content */}
+        <div className="relative h-full w-full">
+          <div className="mx-auto max-w-7xl h-full px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col justify-center h-full">
+              <div className="max-w-xl">
+                <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
+                  Discover Traditional Elegance
+                </h1>
+                <p className="mt-6 text-lg leading-8 text-neutral-300">
+                  Explore our curated collection of premium kurtas, crafted with
+                  authentic designs and superior quality fabrics.
+                </p>
+              </div>
+              <div className="mt-10">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="bg-white hover:bg-white/90 text-black"
+                >
+                  Shop Now
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Navigation Arrows */}
+        <button className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white hover:bg-white/10 rounded-full transition-colors">
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+        <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-white hover:bg-white/10 rounded-full transition-colors">
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
       </div>
+
+      {/* Features Section */}
+      <Section>
+        <Container>
+          <BentoGrid columns={4}>
+            <BentoGridItem
+              title="Premium Quality"
+              description="Handcrafted with the finest materials"
+              icon={<Star className="w-6 h-6" />}
+            />
+            <BentoGridItem
+              title="Trending Styles"
+              description="Latest designs from top artisans"
+              icon={<TrendingUp className="w-6 h-6" />}
+            />
+            <BentoGridItem
+              title="Customer First"
+              description="Dedicated support and easy returns"
+              icon={<Users className="w-6 h-6" />}
+            />
+            <BentoGridItem
+              title="Fast Delivery"
+              description="Quick and secure shipping"
+              icon={<ShoppingBag className="w-6 h-6" />}
+            />
+          </BentoGrid>
+        </Container>
+      </Section>
+
+      {/* Featured Products */}
+      <Section
+        title="Featured Products"
+        description="Our most popular kurtas, handpicked for you"
+      >
+        <Container>
+          <BentoGrid columns={3}>
+            {/* TODO: Add ProductCard components here */}
+            {[1, 2, 3].map((i) => (
+              <BentoGridItem
+                key={i}
+                className="aspect-[3/4]"
+                title={`Featured Kurta ${i}`}
+                description="Premium cotton kurta with traditional embroidery"
+              />
+            ))}
+          </BentoGrid>
+        </Container>
+      </Section>
+
+      {/* Categories */}
+      <Section
+        title="Shop by Category"
+        description="Explore our wide range of traditional and modern kurtas"
+      >
+        <Container>
+          <BentoGrid columns={2}>
+            <BentoGridItem
+              size="lg"
+              title="Traditional Collection"
+              description="Timeless designs that celebrate heritage"
+            />
+            <BentoGridItem
+              size="lg"
+              title="Modern Collection"
+              description="Contemporary styles for the modern wardrobe"
+            />
+          </BentoGrid>
+        </Container>
+      </Section>
+
+      {/* Blog Preview */}
+      <Section
+        title="Style Guide"
+        description="Tips, trends, and styling inspiration"
+      >
+        <Container>
+          <BentoGrid columns={3}>
+            {[1, 2, 3].map((i) => (
+              <BentoGridItem
+                key={i}
+                title={`Style Tip ${i}`}
+                description="Learn how to style your kurta for different occasions"
+              />
+            ))}
+          </BentoGrid>
+        </Container>
+      </Section>
+
+      {/* Newsletter */}
+      <Section>
+        <Container>
+          <BentoGridItem
+            className="text-center"
+            title="Stay Updated"
+            description="Subscribe to our newsletter for the latest collections and exclusive offers"
+            header={
+              <div className="flex flex-col items-center gap-4 mt-6">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="w-full max-w-md px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                />
+                <Button>Subscribe</Button>
+              </div>
+            }
+          />
+        </Container>
+      </Section>
     </>
   );
 }
