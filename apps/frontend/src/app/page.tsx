@@ -167,27 +167,6 @@ export default function HomePage() {
           </BentoGrid>
         </Container>
       </Section>
-
-      {/* Newsletter */}
-      <Section>
-        <Container>
-          <BentoGridItem
-            className="text-center"
-            title="Stay Updated"
-            description="Subscribe to our newsletter for the latest collections and exclusive offers"
-            header={
-              <div className="flex flex-col items-center gap-4 mt-6">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="w-full max-w-md px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
-                />
-                <Button>Subscribe</Button>
-              </div>
-            }
-          />
-        </Container>
-      </Section>
     </>
   );
 }

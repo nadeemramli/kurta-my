@@ -17,16 +17,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const { totalQuantity, setIsOpen: setCartOpen } = useCart();
   const { user, logout } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 lg:px-6 transition-colors">
+      <nav
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 lg:px-6 transition-colors duration-300",
+          isHomePage
+            ? "bg-transparent"
+            : "bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-800"
+        )}
+      >
         {/* Left section - Hamburger menu */}
         <div className="flex w-1/3 justify-start">
           <Button

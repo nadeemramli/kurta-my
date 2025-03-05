@@ -32,42 +32,21 @@ const directories: NavDirectory[] = [
     title: "Shop",
     links: [
       { label: "All Products", href: "/products" as Route },
-      { label: "New Arrivals", href: "/products/new" as Route },
-      { label: "Best Sellers", href: "/products/best-sellers" as Route },
-      { label: "Sale", href: "/products/sale" as Route },
+      { label: "Brands", href: "/brands" as Route },
+      { label: "Categories", href: "/categories" as Route },
     ],
   },
   {
-    title: "Help",
+    title: "Content",
     links: [
-      { label: "Contact Us", href: "/contact" as Route },
-      { label: "FAQs", href: "/faqs" as Route },
-      { label: "Shipping", href: "/shipping" as Route },
-      { label: "Returns", href: "/returns" as Route },
+      { label: "Blog", href: "/blog" as Route },
+      { label: "Latest Posts", href: "/blog/latest" as Route },
+      { label: "Categories", href: "/blog/categories" as Route },
     ],
   },
   {
-    title: "Policies",
-    links: [
-      { label: "Privacy Policy", href: "/privacy" as Route },
-      { label: "Terms of Service", href: "/terms" as Route },
-      { label: "Refund Policy", href: "/refund" as Route },
-    ],
-  },
-  {
-    title: "Blog",
-    links: [
-      { label: "Latest Posts", href: "/blog" as Route },
-      { label: "Style Guide", href: "/blog/style-guide" as Route },
-      { label: "Lookbook", href: "/blog/lookbook" as Route },
-    ],
-  },
-  {
-    title: "Loyalty",
-    links: [
-      { label: "Rewards Program", href: "/rewards" as Route },
-      { label: "Referral Program", href: "/referral" as Route },
-    ],
+    title: "Program",
+    links: [{ label: "The Kurta Royalty", href: "/loyalty" as Route }],
   },
 ];
 
