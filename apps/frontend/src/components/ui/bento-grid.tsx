@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import React from "react";
+import { LucideIcon } from "lucide-react";
+import Image from "next/image";
 
 interface BentoGridProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
@@ -15,6 +17,7 @@ interface BentoItemProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactNode;
   children?: React.ReactNode;
   size?: "sm" | "md" | "lg";
+  image?: string;
 }
 
 export function BentoGrid({
@@ -48,68 +51,38 @@ export function BentoGridItem({
   className,
   title,
   description,
-  header,
   icon,
-  children,
-  size = "md",
+  image,
+  size = "sm",
   ...props
 }: BentoItemProps) {
   return (
     <div
       className={cn(
-        "group/bento relative overflow-hidden",
-        "rounded-xl transition-all duration-200",
-        "bg-neutral-900/5 dark:bg-neutral-100/5",
-        "border border-neutral-200/10 dark:border-neutral-800",
-        // 3D effect styles
-        "transform perspective-1000",
-        "hover:shadow-2xl hover:shadow-neutral-900/10 dark:hover:shadow-neutral-100/10",
-        "hover:-translate-y-1 hover:translate-x-0",
-        "hover:rotate-[0.5deg] hover:scale-[1.02]",
-        // Size variations
-        {
-          "row-span-1": size === "sm",
-          "row-span-1 sm:row-span-2": size === "lg",
-          "p-4": size === "sm",
-          "p-6": size === "md",
-          "p-8": size === "lg",
-        },
+        "row-span-1 rounded-xl group/bento hover:shadow-xl transition duration-200 shadow-input dark:shadow-none p-4 dark:bg-black dark:border-white/[0.2] bg-white border border-transparent justify-between flex flex-col space-y-4",
         className
       )}
       {...props}
     >
-      <div
-        className={cn(
-          "absolute inset-0 bg-gradient-to-br from-neutral-900/10 via-neutral-900/5 to-neutral-900/0",
-          "dark:from-neutral-100/10 dark:via-neutral-100/5 dark:to-neutral-100/0",
-          "opacity-0 group-hover/bento:opacity-100 transition-opacity duration-500",
-          // 3D lighting effect
-          "after:absolute after:inset-0",
-          "after:bg-gradient-to-br after:from-neutral-900/0 after:to-neutral-900/20",
-          "after:dark:from-neutral-100/0 after:dark:to-neutral-100/20",
-          "after:opacity-0 after:group-hover/bento:opacity-100",
-          "after:transition-opacity after:duration-500"
-        )}
-      />
-
-      <div className="relative h-full">
-        {header && <div className="mb-4">{header}</div>}
-        {icon && (
-          <div className="mb-4 inline-flex rounded-lg bg-neutral-100/50 p-2 dark:bg-neutral-900/50">
-            {icon}
-          </div>
-        )}
-        {title && (
-          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 tracking-wide mb-2">
-            {title}
-          </h3>
-        )}
-        {description && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {description}
-          </p>
-        )}
-        {children}
+      {image ? (
+        <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg">
+          <Image
+            src={image}
+            alt={title || "Product image"}
+            fill
+            className="object-cover object-center transition-transform duration-300 group-hover/bento:scale-105"
+          />
+        </div>
+      ) : (
+        icon && <div className="p-2">{icon}</div>
+      )}
+      <div>
+        <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 tracking-wide group-hover/bento:text-black dark:group-hover/bento:text-white">
+          {title}
+        </h3>
+        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 group-hover/bento:text-neutral-600 dark:group-hover/bento:text-neutral-300">
+          {description}
+        </p>
       </div>
     </div>
   );

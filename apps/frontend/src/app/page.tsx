@@ -2,14 +2,17 @@ import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { HeroButton } from "@/components/ui/scroll-button";
+import { MarqueeBanner } from "@/components/ui/marquee-banner";
 import { ShoppingBag, Star, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
+import { ProductCarousel } from "@/components/ui/product-carousel";
+import { ProductCard } from "@/components/ui/product-card";
 
 export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <div className="relative h-[65vh] w-full">
+      <div className="relative h-[70vh] w-full">
         {/* Hero Image */}
         <div className="absolute inset-0">
           <Image
@@ -19,7 +22,7 @@ export default function HomePage() {
             className="object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-black/10" />
         </div>
 
         {/* Content */}
@@ -79,91 +82,164 @@ export default function HomePage() {
         </button>
       </div>
 
+      {/* Sale Banner */}
+      <MarqueeBanner />
+
+      {/* Featured Collections */}
+      <Section className="!pt-0">
+        <Container className="!pt-0">
+          <div className="py-24">
+            <h2 className="text-3xl font-bold text-center mb-4">
+              Featured Collections
+            </h2>
+            <p className="text-neutral-600 text-center mb-12 max-w-2xl mx-auto">
+              Explore our curated collections of premium kurtas
+            </p>
+            <BentoGrid columns={3}>
+              {[
+                {
+                  title: "Modern Essentials Collection",
+                  description: "Minimalist designs for the contemporary man",
+                  image: "/images/products/collection-1.jpg",
+                  className: "aspect-[3/4]",
+                },
+                {
+                  title: "Traditional Heritage Series",
+                  description: "Timeless patterns with modern comfort",
+                  image: "/images/products/collection-2.jpg",
+                  className: "aspect-[3/4]",
+                },
+                {
+                  title: "Premium Luxury Line",
+                  description: "Exquisite fabrics with superior craftsmanship",
+                  image: "/images/products/collection-3.jpg",
+                  className: "aspect-[3/4]",
+                },
+              ].map((collection, i) => (
+                <BentoGridItem
+                  key={i}
+                  title={collection.title}
+                  description={collection.description}
+                  className={collection.className}
+                  image={collection.image}
+                />
+              ))}
+            </BentoGrid>
+          </div>
+        </Container>
+      </Section>
+
+      {/* New Arrivals Carousel */}
+      <Section className="bg-black">
+        <Container>
+          <div className="py-20">
+            <h2 className="text-2xl font-medium text-center mb-2 text-white uppercase tracking-wide">
+              New Arrivals
+            </h2>
+            <p className="text-neutral-400 text-center mb-12 text-sm tracking-wide">
+              Discover our latest kurta collections
+            </p>
+            <div className="px-4">
+              <ProductCarousel>
+                {[
+                  {
+                    title: "Classic Kurta - Black",
+                    price: "RM 150.00 MYR",
+                    image: "/images/products/kurta-1.jpg",
+                    colors: ["black", "white", "gray"],
+                  },
+                  {
+                    title: "Classic Kurta - White",
+                    price: "RM 150.00 MYR",
+                    image: "/images/products/kurta-2.jpg",
+                    colors: ["white", "black", "gray"],
+                  },
+                  {
+                    title: "Classic Kurta - Gray",
+                    price: "RM 150.00 MYR",
+                    image: "/images/products/kurta-3.jpg",
+                    colors: ["gray", "black", "white"],
+                    soldOut: true,
+                  },
+                  {
+                    title: "Classic Kurta - Navy",
+                    price: "RM 150.00 MYR",
+                    image: "/images/products/kurta-4.jpg",
+                    colors: ["black", "white"],
+                  },
+                ].map((product, i) => (
+                  <div
+                    key={i}
+                    className="flex-[0_0_90%] min-w-0 pl-4 pr-12 first:pl-0 last:pr-4"
+                  >
+                    <ProductCard {...product} className="bg-black" />
+                  </div>
+                ))}
+              </ProductCarousel>
+            </div>
+            <div className="flex justify-center mt-12">
+              <button className="border border-white text-white px-12 py-2 text-sm uppercase tracking-wide hover:bg-white hover:text-black transition-colors">
+                Shop All
+              </button>
+            </div>
+          </div>
+        </Container>
+      </Section>
+
       {/* Features Section */}
       <Section>
         <Container>
-          <BentoGrid columns={4}>
-            <BentoGridItem
-              title="Premium Quality"
-              description="Handcrafted with the finest materials"
-              icon={<Star className="w-6 h-6" />}
-            />
-            <BentoGridItem
-              title="Trending Styles"
-              description="Latest designs from top artisans"
-              icon={<TrendingUp className="w-6 h-6" />}
-            />
-            <BentoGridItem
-              title="Customer First"
-              description="Dedicated support and easy returns"
-              icon={<Users className="w-6 h-6" />}
-            />
-            <BentoGridItem
-              title="Fast Delivery"
-              description="Quick and secure shipping"
-              icon={<ShoppingBag className="w-6 h-6" />}
-            />
-          </BentoGrid>
-        </Container>
-      </Section>
-
-      {/* Featured Products */}
-      <Section
-        id="featured-products"
-        title="Featured Products"
-        description="Our most popular kurtas, handpicked for you"
-      >
-        <Container>
-          <BentoGrid columns={3}>
-            {/* TODO: Add ProductCard components here */}
-            {[1, 2, 3].map((i) => (
+          <div className="py-24">
+            <h2 className="text-3xl font-bold text-center mb-4">
+              Why Choose Us
+            </h2>
+            <p className="text-neutral-600 text-center mb-12 max-w-2xl mx-auto">
+              Experience the Kurta Gorilla difference
+            </p>
+            <BentoGrid columns={4}>
               <BentoGridItem
-                key={i}
-                className="aspect-[3/4]"
-                title={`Featured Kurta ${i}`}
-                description="Premium cotton kurta with traditional embroidery"
+                title="Premium Quality"
+                description="Handcrafted with the finest materials"
+                icon={<Star className="w-6 h-6" />}
               />
-            ))}
-          </BentoGrid>
-        </Container>
-      </Section>
-
-      {/* Categories */}
-      <Section
-        title="Shop by Category"
-        description="Explore our wide range of traditional and modern kurtas"
-      >
-        <Container>
-          <BentoGrid columns={2}>
-            <BentoGridItem
-              size="lg"
-              title="Traditional Collection"
-              description="Timeless designs that celebrate heritage"
-            />
-            <BentoGridItem
-              size="lg"
-              title="Modern Collection"
-              description="Contemporary styles for the modern wardrobe"
-            />
-          </BentoGrid>
-        </Container>
-      </Section>
-
-      {/* Blog Preview */}
-      <Section
-        title="Style Guide"
-        description="Tips, trends, and styling inspiration"
-      >
-        <Container>
-          <BentoGrid columns={3}>
-            {[1, 2, 3].map((i) => (
               <BentoGridItem
-                key={i}
-                title={`Style Tip ${i}`}
-                description="Learn how to style your kurta for different occasions"
+                title="Trending Styles"
+                description="Latest designs from top artisans"
+                icon={<TrendingUp className="w-6 h-6" />}
               />
-            ))}
-          </BentoGrid>
+              <BentoGridItem
+                title="Customer First"
+                description="Dedicated support and easy returns"
+                icon={<Users className="w-6 h-6" />}
+              />
+              <BentoGridItem
+                title="Fast Delivery"
+                description="Quick and secure shipping"
+                icon={<ShoppingBag className="w-6 h-6" />}
+              />
+            </BentoGrid>
+          </div>
+        </Container>
+      </Section>
+
+      {/* Style Guide */}
+      <Section className="bg-neutral-50">
+        <Container>
+          <div className="py-24">
+            <h2 className="text-3xl font-bold text-center mb-4">Style Guide</h2>
+            <p className="text-neutral-600 text-center mb-12 max-w-2xl mx-auto">
+              Tips, trends, and styling inspiration
+            </p>
+            <BentoGrid columns={3}>
+              {[1, 2, 3].map((i) => (
+                <BentoGridItem
+                  key={i}
+                  title={`Style Tip ${i}`}
+                  description="Learn how to style your kurta for different occasions"
+                />
+              ))}
+            </BentoGrid>
+          </div>
         </Container>
       </Section>
     </>

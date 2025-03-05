@@ -19,7 +19,7 @@ export function Section({
 }: SectionProps) {
   return (
     <section
-      className={cn("relative py-8 md:py-12", "overflow-hidden", className)}
+      className={cn("relative", "overflow-hidden", className)}
       {...props}
     >
       {(title || description || action) && (

@@ -22,10 +22,6 @@ export function Container({
         variant === "default" && "px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto",
         variant === "contained" && "max-w-7xl mx-auto px-4",
         variant === "full" && "",
-        // Common styles
-        "bg-gradient-to-b from-neutral-50/50 to-neutral-100/50",
-        "dark:from-neutral-950 dark:to-neutral-900",
-        "backdrop-blur-sm",
         // 3D effects
         is3D && [
           "transform perspective-1000",

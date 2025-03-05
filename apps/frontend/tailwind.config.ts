@@ -38,8 +38,8 @@ const config: Config = {
           to: { opacity: '1' }
         },
         marquee: {
-          '0%': { transform: 'translateX(0%)' },
-          '100%': { transform: 'translateX(-100%)' }
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' }
         },
         blink: {
           '0%': { opacity: '0.2' },
@@ -49,7 +49,6 @@ const config: Config = {
       },
       animation: {
         fadeIn: 'fadeIn 0.5s ease-in-out',
-        carousel: 'marquee 60s linear infinite',
         blink: 'blink 1.4s both infinite'
       }
     },
