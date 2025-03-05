@@ -36,9 +36,10 @@ export default function HomePage() {
                   Kurta Moden Klasik
                 </h1>
                 <p className="mt-4 text-sm md:text-base leading-relaxed text-neutral-100 max-w-[600px] text-center mx-auto">
-                  Gaya Raya bersama Gorilla, dengan koleksi "limited edition"
-                  kurta moden klasik. Dengan reka bentuk modern tradisional,
-                  material berkualiti tinggi, dan tanpa batasan saiz.
+                  Gaya Raya bersama Gorilla, dengan koleksi &ldquo;limited
+                  edition&rdquo; kurta moden klasik. Dengan reka bentuk modern
+                  tradisional, material berkualiti tinggi, dan tanpa batasan
+                  saiz.
                 </p>
               </div>
               <div className="mt-6 flex justify-center gap-3">

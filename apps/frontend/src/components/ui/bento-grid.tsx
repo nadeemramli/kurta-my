@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
 import React from "react";
-import { LucideIcon } from "lucide-react";
 import Image from "next/image";
 
 interface BentoGridProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -16,7 +15,6 @@ interface BentoItemProps extends React.HTMLAttributes<HTMLDivElement> {
   header?: React.ReactNode;
   icon?: React.ReactNode;
   children?: React.ReactNode;
-  size?: "sm" | "md" | "lg";
   image?: string;
 }
 
@@ -53,7 +51,6 @@ export function BentoGridItem({
   description,
   icon,
   image,
-  size = "sm",
   ...props
 }: BentoItemProps) {
   return (

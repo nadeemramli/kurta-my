@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { Circle } from "lucide-react";
 
 interface ProductCardProps {
   title: string;
