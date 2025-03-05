@@ -1,7 +1,7 @@
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
-import { Button } from "@/components/ui/button";
+import { HeroButton } from "@/components/ui/scroll-button";
 import { ShoppingBag, Star, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
 
@@ -9,7 +9,7 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <div className="relative h-[calc(100vh-4rem)] w-full">
+      <div className="relative h-[65vh] w-full">
         {/* Hero Image */}
         <div className="absolute inset-0">
           <Image
@@ -24,32 +24,30 @@ export default function HomePage() {
 
         {/* Content */}
         <div className="relative h-full w-full">
-          <div className="mx-auto max-w-7xl h-full px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col justify-center h-full">
-              <div className="max-w-xl">
-                <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
-                  Discover Traditional Elegance
+          <div className="mx-auto h-full px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col justify-end h-full pb-12">
+              <div className="max-w-full">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl leading-tight font-bold tracking-tight text-white text-center">
+                  Kurta Gorilla:
+                  <br />
+                  Kurta Moden Klasik
                 </h1>
-                <p className="mt-6 text-lg leading-8 text-neutral-300">
-                  Explore our curated collection of premium kurtas, crafted with
-                  authentic designs and superior quality fabrics.
+                <p className="mt-4 text-sm md:text-base leading-relaxed text-neutral-100 max-w-[600px] text-center mx-auto">
+                  Gaya Raya bersama Gorilla, dengan koleksi "limited edition"
+                  kurta moden klasik. Dengan reka bentuk modern tradisional,
+                  material berkualiti tinggi, dan tanpa batasan saiz.
                 </p>
               </div>
-              <div className="mt-10">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="bg-white hover:bg-white/90 text-black"
-                >
-                  Shop Now
-                </Button>
+              <div className="mt-6 flex justify-center gap-3">
+                <HeroButton variant="scroll" label="SHOP NOW" />
+                <HeroButton variant="link" label="A CLOSER LOOK" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Navigation Arrows */}
-        <button className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white hover:bg-white/10 rounded-full transition-colors">
+        <button className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-gray-300 hover:bg-white/10 rounded-full transition-colors">
           <svg
             className="h-6 w-6"
             fill="none"
@@ -111,6 +109,7 @@ export default function HomePage() {
 
       {/* Featured Products */}
       <Section
+        id="featured-products"
         title="Featured Products"
         description="Our most popular kurtas, handpicked for you"
       >
