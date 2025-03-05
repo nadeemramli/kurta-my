@@ -1,7 +1,5 @@
-import { Container } from "@/components/ui/container";
 import Link from "next/link";
 import { Route } from "next";
-import { cn } from "@/lib/utils";
 
 interface FooterLink {
   label: string;
