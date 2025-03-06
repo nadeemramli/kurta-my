@@ -1,10 +1,5 @@
-import { supabase } from './supabase';
-
-export type ErrorResponse = {
-  statusCode: number;
-  message: string;
-  error?: any;
-};
+import { ErrorResponse } from '@kurta-my/types';
+import { supabase } from '@kurta-my/api-client';
 
 export async function logError(error: any, context?: string) {
   if (!process.env.NEXT_PUBLIC_ENABLE_ERROR_LOGGING) return;

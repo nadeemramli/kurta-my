@@ -1,4 +1,4 @@
-import { Product } from './types';
+import { Product } from '@kurta-my/types';
 
 // This simulates what we would get from our admin backend
 export const mockProducts: Product[] = [
@@ -9,7 +9,6 @@ export const mockProducts: Product[] = [
     price: { amount: 49.99, currencyCode: 'USD' },
     images: [
       {
-        // Using relative path as this will be served from our own domain
         url: '/images/products/white-kurta-1.jpg',
         altText: 'Classic White Kurta - Front View',
         width: 800,

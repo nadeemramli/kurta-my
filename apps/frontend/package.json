@@ -11,6 +11,9 @@
   "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
+    "@kurta-my/api-client": "workspace:*",
+    "@kurta-my/types": "workspace:*",
+    "@kurta-my/utils": "workspace:*",
     "@radix-ui/react-checkbox": "^1.1.4",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-dropdown-menu": "^2.1.6",

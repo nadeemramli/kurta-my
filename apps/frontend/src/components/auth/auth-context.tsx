@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { api } from "@kurta-my/api-client";
 
 interface User {
   id: string;

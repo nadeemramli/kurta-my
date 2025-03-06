@@ -1,5 +1,5 @@
 import { BentoGridItem } from "@/components/ui/bento-grid";
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 
 interface AuthCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;

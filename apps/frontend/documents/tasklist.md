@@ -54,23 +54,24 @@
     - XML Sitemap Index page
 
     Error pages
-    - 404 page
-    - 500 page
-    - 403 page
-    - 401 page
-    - 400 page
-    - 408 page
-    - 409 page
-    - 429 page
-    - 502 page
-    - 503 page
-    - 504 page
-    - 505 page
-    - 506 page
-    - 410 page
+    - ✓ 404 page
+    - ✓ 500 page
+    - ✓ 403 page
+    - ✓ 401 page
+    - ✓ 400 page
+    - ✓ 408 page
+    - ✓ 409 page
+    - ✓ 429 page
+    - ✓ 502 page
+    - ✓ 503 page
+    - ✓ 504 page
+    - ✓ 505 page
+    - ✓ 506 page
+    - ✓ 410 page
 
     Marketing pages
-    - The Kurta Loyality page
+    - Loyalty Program
+    - Referral Program
     
 
 Components

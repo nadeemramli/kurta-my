@@ -1,0 +1,22 @@
+{
+  "name": "@kurta-my/mocks",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "dev": "tsup src/index.ts --format esm,cjs --watch --dts",
+    "clean": "rm -rf .turbo node_modules dist",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kurta-my/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@kurta-my/config": "workspace:*",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.4"
+  }
+}

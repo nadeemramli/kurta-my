@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { api } from "@/lib/api";
-import { Product } from "@/types";
+import { api } from "@kurta-my/api-client";
+import { Product } from "@kurta-my/types";
 import { useParams } from "next/navigation";
 
 export default function ProductPage() {
