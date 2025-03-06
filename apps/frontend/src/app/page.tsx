@@ -12,15 +12,17 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <div className="relative h-[70vh] w-full">
+      <div className="relative h-[75vh] w-full">
         {/* Hero Image */}
         <div className="absolute inset-0">
           <Image
             src="/images/hero.png"
-            alt="Hero image"
-            fill
-            className="object-cover object-center"
+            alt="Kurta Gorilla Hero Image"
+            width={1920}
+            height={1080}
+            quality={100}
             priority
+            className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/10" />
         </div>
