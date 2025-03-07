@@ -12,7 +12,7 @@ export async function middleware(req: NextRequest) {
 
   // Check if we're on an admin route
   const isAdminRoute = req.nextUrl.pathname.startsWith('/admin');
-  const isAuthRoute = req.nextUrl.pathname.startsWith('/login');
+  const isAuthRoute = req.nextUrl.pathname === '/login';
   const isRootRoute = req.nextUrl.pathname === '/';
 
   // Always redirect root to /admin if authenticated, or /login if not
@@ -24,26 +24,13 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  if (isAdminRoute) {
-    if (!session) {
-      // Redirect to login if not authenticated
-      return NextResponse.redirect(new URL('/login', req.url));
-    }
-
-    // Check if user is admin
-    const { data: { user } } = await supabase.auth.getUser();
-    const isAdmin = user?.user_metadata?.isAdmin === true;
-    const role = user?.user_metadata?.role;
-
-    if (!isAdmin || !role) {
-      // Redirect to login if not admin
-      await supabase.auth.signOut();
-      return NextResponse.redirect(new URL('/login', req.url));
-    }
+  // If trying to access admin routes without session, redirect to login
+  if (isAdminRoute && !session) {
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
+  // If trying to access login page with session, redirect to admin
   if (isAuthRoute && session) {
-    // Redirect to admin if already authenticated
     return NextResponse.redirect(new URL('/admin', req.url));
   }
 

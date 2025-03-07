@@ -27,6 +27,7 @@ export function Logo({
       height={dimension}
       className={`rounded-xl ${className}`}
       priority={priority}
+      style={{ width: dimension, height: dimension }}
     />
   );
 }

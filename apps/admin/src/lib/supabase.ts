@@ -1,10 +1,13 @@
-import { createSupabaseClient, type SupabaseClient } from '@kurta-my/database';
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import type { Database } from "@kurta-my/database";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export const createClient = () => {
+  const client = createClientComponentClient<Database>();
+  return client;
+};
 
-export const supabase = createSupabaseClient(supabaseUrl, supabaseKey);
+// Create a singleton instance
+export const supabase = createClient();
 
 // Re-export types from the database package
-export type { Database } from '@kurta-my/database';
 export type { SupabaseClient }; 
