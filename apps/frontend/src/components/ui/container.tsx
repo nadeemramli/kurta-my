@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 
 interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;

@@ -1,51 +1,25 @@
 import { NextResponse } from 'next/server';
-import chip from 'chip-sdk';
+import { ChipService, type CreatePaymentParams } from '@kurta-my/payments';
 
-interface ChipConfig {
-  brand_id: string;
-  api_key: string;
-  is_sandbox: boolean;
-}
-
-const config: ChipConfig = {
+const chipService = new ChipService({
   brand_id: process.env.CHIP_BRAND_ID!,
   api_key: process.env.CHIP_LIVE_KEY!,
-  is_sandbox: false,
-};
-
-interface ChipPurchase {
-  create: (params: any, config: ChipConfig) => Promise<any>;
-  get: (id: string, config: ChipConfig) => Promise<any>;
-}
+  is_sandbox: process.env.NODE_ENV === 'development',
+});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { product, client, reference } = body;
 
-    const purchase = new (chip.Purchase as any)() as ChipPurchase;
-    const payment = await purchase.create({
-      success_callback: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
-      failure_callback: `${process.env.NEXT_PUBLIC_APP_URL}/payment/failure`,
-      cancel_callback: `${process.env.NEXT_PUBLIC_APP_URL}/payment/cancel`,
-      platform: 'web',
-      transaction: {
-        products: [{
-          name: product.name,
-          price: product.price,
-          quantity: 1,
-        }],
-      },
-      client: {
-        email: client.email,
-        full_name: client.full_name,
-        phone_number: client.phone_number,
-      },
-      reference: reference,
-      send_email: true,
-    }, config);
+    const params: CreatePaymentParams = {
+      product,
+      client,
+      reference,
+    };
 
-    return NextResponse.json(payment);
+    const checkoutUrl = await chipService.createPayment(params);
+    return NextResponse.json({ checkout_url: checkoutUrl });
   } catch (error) {
     console.error('Error creating payment:', error);
     return NextResponse.json(
@@ -67,9 +41,11 @@ export async function GET(request: Request) {
       );
     }
 
-    const purchase = new (chip.Purchase as any)() as ChipPurchase;
-    const payment = await purchase.get(id, config);
-    return NextResponse.json(payment);
+    // TODO: Implement payment status check using the payments package
+    return NextResponse.json(
+      { error: 'Not implemented' },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Error getting payment:', error);
     return NextResponse.json(

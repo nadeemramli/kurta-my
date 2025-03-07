@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 import { usePathname } from "next/navigation";
 
 export function Navbar() {

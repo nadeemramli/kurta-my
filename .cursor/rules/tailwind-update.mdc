@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+---
+- Ensure we're using "npx @tailwindcss/upgrade" which may resulted in tailwind above version 4.0.0 
+- Don't change to lower version Tailwind, just because it's "stable".
+- We ran npx @tailwindcss/upgrade before, as you can see Tailwind 4.0.11 is available.
+≈ tailwindcss v4.0.11
+
+│ Tailwind CSS v4.0.11 found. The migration tool can only be run on v3 projects. 

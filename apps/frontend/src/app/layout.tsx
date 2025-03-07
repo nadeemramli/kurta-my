@@ -1,7 +1,7 @@
 import { GeistSans } from "geist/font/sans";
 import { ReactNode } from "react";
 import "./globals.css";
-import { baseUrl } from "@/lib/utils";
+import { baseUrl } from "@kurta-my/utils";
 import { ClientComponents } from "./client-components";
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "Kurta MY";

@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/lib/supabase";
-import type { Database } from "@/lib/supabase";
 import OrderMetrics from "@/components/orders/analytics/OrderMetrics";
 import OrderTrends from "@/components/orders/analytics/OrderTrends";
 
-type OrderAnalytics = Database["order_analytics"]["Row"];
+interface OrderAnalytics {
+  date: string;
+  total_orders: number;
+  total_revenue: number;
+  average_order_value: number;
+  conversion_rate: number;
+}
 
 interface OrderTrend {
   date: string;

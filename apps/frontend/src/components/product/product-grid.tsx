@@ -1,6 +1,6 @@
 import { BentoGrid } from "../ui/bento-grid";
 import { ProductCard } from "./product-card";
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 import { Product } from "@/types";
 
 interface ProductGridProps {

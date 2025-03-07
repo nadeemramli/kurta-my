@@ -1,4 +1,4 @@
-import { baseUrl } from '@/lib/utils';
+import { baseUrl } from '@kurta-my/utils';
 
 export default function robots() {
   return {

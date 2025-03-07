@@ -1,5 +1,5 @@
 import Grid from "../grid";
-import { Product } from "@/lib/types";
+import { Product } from "@kurta-my/types";
 import Link from "next/link";
 import { GridTileImage } from "./grid/tile";
 

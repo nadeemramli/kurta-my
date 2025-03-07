@@ -7,4 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 
 export const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
   ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-  : 'http://localhost:3000'; 
+  : 'http://localhost:3000';
+
+// Add any additional utility functions here 

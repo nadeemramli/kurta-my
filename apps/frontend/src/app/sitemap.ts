@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { baseUrl } from '@/lib/utils';
+import { baseUrl } from '@kurta-my/utils';
 
 export const dynamic = 'force-dynamic';
 

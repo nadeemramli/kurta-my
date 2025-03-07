@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Route } from "next";

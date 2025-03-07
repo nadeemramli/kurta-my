@@ -1,4 +1,4 @@
-import { SortFilterItem } from '@/lib/types';
+import { SortFilterItem } from '@kurta-my/types';
 
 export const defaultSort: SortFilterItem = {
   title: 'Relevance',

@@ -4,7 +4,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import AutoPlay from "embla-carousel-autoplay";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 
 interface ProductCarouselProps {
   children: React.ReactNode;

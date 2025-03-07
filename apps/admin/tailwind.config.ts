@@ -1,4 +1,7 @@
 import type { Config } from "tailwindcss";
+import aspectRatio from '@tailwindcss/aspect-ratio';
+import forms from '@tailwindcss/forms';
+import typography from '@tailwindcss/typography';
 
 const config: Config = {
   content: [
@@ -6,10 +9,23 @@ const config: Config = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  theme: {
-    extend: {},
+  future: {
+    hoverOnlyWhenSupported: true,
   },
-  plugins: [require("@tailwindcss/typography")],
+  darkMode: 'media',
+  theme: {
+    extend: {
+      colors: {
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+      },
+      fontFamily: {
+        sans: ['var(--font-sans)'],
+        mono: ['var(--font-mono)'],
+      },
+    },
+  },
+  plugins: [aspectRatio, forms, typography],
 };
 
 export default config; 

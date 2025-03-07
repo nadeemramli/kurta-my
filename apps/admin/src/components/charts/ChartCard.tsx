@@ -28,24 +28,26 @@ ChartJS.register(
   Legend
 );
 
-interface ChartCardProps {
+type ChartType = "line" | "bar";
+
+interface ChartCardProps<T extends ChartType> {
   title: string;
-  type: "line" | "bar";
-  data: ChartData<"line" | "bar">;
-  options?: ChartOptions<"line" | "bar">;
+  type: T;
+  data: ChartData<T>;
+  options?: ChartOptions<T>;
   loading?: boolean;
   className?: string;
 }
 
-export default function ChartCard({
+export default function ChartCard<T extends ChartType>({
   title,
   type,
   data,
   options,
   loading,
   className,
-}: ChartCardProps) {
-  const defaultOptions: ChartOptions = {
+}: ChartCardProps<T>) {
+  const baseOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -71,9 +73,15 @@ export default function ChartCard({
         ) : (
           <div className="h-[300px]">
             {type === "line" ? (
-              <Line data={data} options={options || defaultOptions} />
+              <Line
+                data={data as ChartData<"line">}
+                options={(options || baseOptions) as ChartOptions<"line">}
+              />
             ) : (
-              <Bar data={data} options={options || defaultOptions} />
+              <Bar
+                data={data as ChartData<"bar">}
+                options={(options || baseOptions) as ChartOptions<"bar">}
+              />
             )}
           </div>
         )}

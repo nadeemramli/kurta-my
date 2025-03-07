@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 import { forwardRef } from "react";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {

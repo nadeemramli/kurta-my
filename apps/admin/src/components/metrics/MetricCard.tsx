@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 
 interface MetricCardProps {
   title: string;

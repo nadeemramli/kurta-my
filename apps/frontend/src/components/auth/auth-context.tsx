@@ -1,19 +1,18 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { api } from "@kurta-my/api-client";
+import { Auth, AuthUser } from "@kurta-my/auth";
 
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-}
+const auth = new Auth({
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+});
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   register: (userData: {
     email: string;
     password: string;
@@ -24,30 +23,39 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      api
-        .getCurrentUser()
-        .then((user) => setUser(user))
-        .catch(() => localStorage.removeItem("auth_token"))
-        .finally(() => setIsLoading(false));
-    } else {
+    // Check for existing session
+    auth.getSession().then((session) => {
+      if (session) {
+        auth.getUser().then((user) => {
+          setUser(user);
+        });
+      }
       setIsLoading(false);
-    }
+    });
+
+    // Subscribe to auth changes
+    const {
+      data: { subscription },
+    } = auth.onAuthStateChange((user) => {
+      setUser(user);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { user, token } = await api.login(email, password);
-    localStorage.setItem("auth_token", token);
-    setUser(user);
+    const { user } = await auth.signIn(email, password);
+    setUser(user as AuthUser);
   };
 
-  const logout = () => {
-    localStorage.removeItem("auth_token");
+  const logout = async () => {
+    await auth.signOut();
     setUser(null);
   };
 
@@ -56,9 +64,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string;
     name?: string;
   }) => {
-    const { user, token } = await api.register(userData);
-    localStorage.setItem("auth_token", token);
-    setUser(user);
+    const { user } = await auth.signUp(userData.email, userData.password, {
+      name: userData.name,
+    });
+    setUser(user as AuthUser);
   };
 
   return (

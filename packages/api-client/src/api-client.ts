@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { handleApiError, logError, redirectToErrorPage } from './error-handler';
+import { handleApiError, logError, redirectToErrorPage } from '@kurta-my/utils';
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,

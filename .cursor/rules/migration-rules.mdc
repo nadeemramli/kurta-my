@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+---
+### Migration Rules
+- Never edit existing migration files in `supabase/migrations`.
+- Follow our migration sequence number (0001,0002,0003) to create new migrations for any changes.
+- The pre-commit hook will block edits to old migrations.

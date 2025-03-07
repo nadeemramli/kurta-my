@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Database } from "@/lib/supabase";
+import type { Database } from "@kurta-my/database";
 import { format } from "date-fns";
 import { AlertCircle } from "lucide-react";
 
-type Order = Database["orders"]["Row"];
+type Order = Database["orders"]["Row"] & {
+  customer?: Database["customers"]["Row"];
+};
 
 export default function DraftOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -21,7 +23,12 @@ export default function DraftOrdersPage() {
 
         const { data, error } = await supabase
           .from("orders")
-          .select("*")
+          .select(
+            `
+            *,
+            customer:customers(*)
+          `
+          )
           .eq("status", "draft")
           .order("created_at", { ascending: false });
 
@@ -143,14 +150,18 @@ export default function DraftOrdersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div>
-                        <div className="font-medium">{order.customer_name}</div>
+                        <div className="font-medium">
+                          {order.customer
+                            ? `${order.customer.first_name} ${order.customer.last_name}`
+                            : "N/A"}
+                        </div>
                         <div className="text-gray-500">
-                          {order.customer_email}
+                          {order.customer?.email || "N/A"}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      RM {order.total.toFixed(2)}
+                      RM {order.total_amount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {format(new Date(order.updated_at), "MMM d, yyyy")}

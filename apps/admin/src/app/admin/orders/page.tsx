@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Database } from "@/lib/supabase";
+import type { Database } from "@kurta-my/database";
 import { format } from "date-fns";
 import { AlertCircle } from "lucide-react";
 
-type Order = Database["orders"]["Row"];
+type Order = Database["orders"]["Row"] & {
+  customer?: Database["customers"]["Row"];
+};
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -21,7 +23,12 @@ export default function OrdersPage() {
 
         const { data, error } = await supabase
           .from("orders")
-          .select("*")
+          .select(
+            `
+            *,
+            customer:customers(*)
+          `
+          )
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -131,9 +138,13 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div>
-                        <div className="font-medium">{order.customer_name}</div>
+                        <div className="font-medium">
+                          {order.customer
+                            ? `${order.customer.first_name} ${order.customer.last_name}`
+                            : "N/A"}
+                        </div>
                         <div className="text-gray-500">
-                          {order.customer_email}
+                          {order.customer?.email || "N/A"}
                         </div>
                       </div>
                     </td>
@@ -144,19 +155,19 @@ export default function OrdersPage() {
                           order.status === "completed"
                             ? "bg-green-100 text-green-800"
                             : order.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : order.status === "processing"
-                                ? "bg-blue-100 text-blue-800"
-                                : order.status === "cancelled"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-gray-100 text-gray-800"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : order.status === "processing"
+                            ? "bg-blue-100 text-blue-800"
+                            : order.status === "cancelled"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
                         }`}
                       >
                         {order.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      RM {order.total.toFixed(2)}
+                      RM {order.total_amount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {format(new Date(order.created_at), "MMM d, yyyy")}

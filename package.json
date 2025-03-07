@@ -2,7 +2,8 @@
   "name": "kurta-my",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "apps/admin",
+    "apps/frontend",
     "packages/*"
   ],
   "scripts": {
@@ -12,12 +13,15 @@
     "clean": "turbo run clean"
   },
   "devDependencies": {
-    "turbo": "^1.10.0"
+    "turbo": "^2.4.4"
   },
   "packageManager": "yarn@4.7.0",
   "version": "1.0.0",
   "main": "index.js",
   "repository": "https://github.com/nadeemramli/kurta-my.git",
   "author": "nadeemramli <m.nadeemramli@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1"
+  }
 }

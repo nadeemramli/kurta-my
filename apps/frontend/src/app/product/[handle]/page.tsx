@@ -49,7 +49,7 @@ export default function ProductPage() {
         <div className="aspect-square overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
           <Image
             src={product.images[0].url}
-            alt={product.images[0].alt}
+            alt={product.images[0].altText}
             width={800}
             height={800}
             className="h-full w-full object-cover object-center"
@@ -64,10 +64,13 @@ export default function ProductPage() {
           </p>
 
           <div className="flex items-center space-x-4">
-            <p className="text-2xl font-bold">${product.price.toFixed(2)}</p>
+            <p className="text-2xl font-bold">
+              {product.price.currencyCode} {product.price.amount.toFixed(2)}
+            </p>
             {product.compareAtPrice && (
               <p className="text-lg text-neutral-500 line-through">
-                ${product.compareAtPrice.toFixed(2)}
+                {product.compareAtPrice.currencyCode}{" "}
+                {product.compareAtPrice.amount.toFixed(2)}
               </p>
             )}
           </div>

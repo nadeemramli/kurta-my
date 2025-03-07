@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Cart } from '@/lib/shopify';
+import type { Cart } from '@/types/cart';
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  // Mock response for now
+  // Mock empty cart response
   const cart: Cart = {
     id: 'mock-cart',
     items: [],

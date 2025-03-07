@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight, Home } from "lucide-react";
 import { Route } from "next";
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 
 export function Breadcrumb() {
   const pathname = usePathname();

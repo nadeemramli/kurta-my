@@ -48,12 +48,17 @@ const config: Config = {
         }
       },
       animation: {
-        fadeIn: 'fadeIn 0.5s ease-in-out',
-        blink: 'blink 1.4s both infinite'
+        fadeIn: 'fadeIn .3s ease-in-out',
+        carousel: 'marquee 60s linear infinite',
+        blink: 'blink 1.4s infinite both'
       }
     },
   },
-  plugins: [aspectRatio, forms, typography],
-};
+  plugins: [
+    aspectRatio,
+    forms,
+    typography,
+  ],
+}
 
 export default config; 

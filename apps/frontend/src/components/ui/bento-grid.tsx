@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 import React from "react";
 import Image from "next/image";
 

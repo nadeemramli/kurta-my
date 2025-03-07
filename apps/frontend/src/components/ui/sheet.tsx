@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 
 const Sheet = SheetPrimitive.Root;
 const SheetPortal = SheetPrimitive.Portal;

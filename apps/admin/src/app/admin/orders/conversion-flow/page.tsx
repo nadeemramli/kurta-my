@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Database } from "@/lib/supabase";
 
 interface ConversionMetrics {
   cart_views: number;

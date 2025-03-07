@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 import { BentoGridItem } from "./bento-grid";
 
 interface SectionProps extends React.HTMLAttributes<HTMLElement> {

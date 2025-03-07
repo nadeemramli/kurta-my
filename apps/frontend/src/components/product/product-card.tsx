@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@kurta-my/utils";
 import { Product } from "@/types";
 import Image from "next/image";
 import Link from "next/link";

@@ -1,4 +1,29 @@
-import type { Product, Category, Brand, Order, User } from '@/types';
+import type { Product, Category, Brand, Order, User } from '@kurta-my/types';
+
+// Helper function to transform API response to match shared Product type
+function transformProduct(apiProduct: any): Product {
+  return {
+    id: apiProduct.id,
+    name: apiProduct.name,
+    description: apiProduct.description,
+    price: {
+      amount: apiProduct.price,
+      currencyCode: 'MYR' // Default to Malaysian Ringgit
+    },
+    ...(apiProduct.compareAtPrice && {
+      compareAtPrice: {
+        amount: apiProduct.compareAtPrice,
+        currencyCode: 'MYR'
+      }
+    }),
+    images: apiProduct.images.map((img: any) => ({
+      url: img.url,
+      altText: img.alt,
+      width: 800, // Default width if not provided
+      height: 800 // Default height if not provided
+    }))
+  };
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -20,11 +45,18 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
 
 export const api = {
   // Products
-  getProducts: (params?: URLSearchParams) => 
-    fetchAPI<{ products: Product[]; total: number }>(`/products${params ? `?${params}` : ''}`),
+  getProducts: async (params?: URLSearchParams) => {
+    const response = await fetchAPI<{ products: any[]; total: number }>(`/products${params ? `?${params}` : ''}`);
+    return {
+      products: response.products.map(transformProduct),
+      total: response.total
+    };
+  },
   
-  getProduct: (slug: string) => 
-    fetchAPI<Product>(`/products/${slug}`),
+  getProduct: async (slug: string) => {
+    const response = await fetchAPI<any>(`/products/${slug}`);
+    return transformProduct(response);
+  },
 
   // Categories
   getCategories: () => 

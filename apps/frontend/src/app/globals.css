@@ -1,24 +1,24 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-@utility animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-@utility animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-@layer base {
-  :root {
-    --background: 255 255 255;
-    --foreground: 0 0 0;
+@layer utilities {
+  .animation-delay-2000 {
+    animation-delay: 2s;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: 0 0 0;
-      --foreground: 255 255 255;
-    }
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}
+
+:root {
+  --background: 255 255 255;
+  --foreground: 0 0 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 0 0 0;
+    --foreground: 255 255 255;
   }
 }
 
@@ -32,5 +32,5 @@
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.5s ease-in-out;
+  animation: fadeIn 1s ease-in-out;
 }
