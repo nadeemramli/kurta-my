@@ -16,6 +16,7 @@ import {
   Home,
   PanelLeftClose,
   PanelLeftOpen,
+  LineChart,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -44,10 +45,9 @@ const sidebarItems: SidebarItem[] = [
     href: "/admin/orders",
     icon: ShoppingBag,
     submenu: [
-      { name: "All Orders", href: "/admin/orders" },
-      { name: "Draft Orders", href: "/admin/orders/draft" },
-      { name: "Order Analytics", href: "/admin/orders/analytics" },
+      { name: "Orders", href: "/admin/orders" },
       { name: "Conversion Flow", href: "/admin/orders/conversion-flow" },
+      { name: "Analytics", href: "/admin/orders/analytics" },
     ],
   },
   {
@@ -55,9 +55,8 @@ const sidebarItems: SidebarItem[] = [
     href: "/admin/products",
     icon: ShoppingBag,
     submenu: [
-      { name: "All Products", href: "/admin/products" },
-      { name: "Add Product", href: "/admin/products/new" },
-      { name: "Categories", href: "/admin/products/categories" },
+      { name: "Products", href: "/admin/products" },
+      { name: "Collections", href: "/admin/products/collections" },
     ],
   },
   {
@@ -65,8 +64,8 @@ const sidebarItems: SidebarItem[] = [
     href: "/admin/customers",
     icon: Users,
     submenu: [
-      { name: "All Customers", href: "/admin/customers" },
-      { name: "Customer Groups", href: "/admin/customers/groups" },
+      { name: "Customers", href: "/admin/customers" },
+      { name: "Segments", href: "/admin/customers/groups" },
     ],
   },
   {
@@ -74,11 +73,8 @@ const sidebarItems: SidebarItem[] = [
     href: "/admin/content",
     icon: FileText,
     submenu: [
-      { name: "Pages", href: "/admin/content/pages" },
-      { name: "Blog Posts", href: "/admin/blog/posts" },
-      { name: "Categories", href: "/admin/blog/categories" },
-      { name: "Tags", href: "/admin/blog/tags" },
-      { name: "Media Library", href: "/admin/content/media" },
+      { name: "Posts", href: "/admin/blog/posts" },
+      { name: "Taxonomies", href: "/admin/blog/taxonomies" },
     ],
   },
   {
@@ -86,20 +82,22 @@ const sidebarItems: SidebarItem[] = [
     href: "/admin/promotions",
     icon: Tag,
     submenu: [
-      { name: "All Promotions", href: "/admin/promotions" },
+      { name: "Overview", href: "/admin/promotions" },
       { name: "Discounts", href: "/admin/promotions/discounts" },
       { name: "Coupons", href: "/admin/promotions/coupons" },
+      { name: "Loyalty Program", href: "/admin/promotions/loyalty" },
+      { name: "Referrals", href: "/admin/promotions/referrals" },
     ],
   },
   {
-    name: "Analytics",
-    href: "/admin/analytics",
-    icon: BarChart,
+    name: "Performance",
+    href: "/admin/performance",
+    icon: LineChart,
     submenu: [
-      { name: "Overview", href: "/admin/analytics" },
-      { name: "Sales", href: "/admin/analytics/sales" },
-      { name: "Traffic", href: "/admin/analytics/traffic" },
-      { name: "Customers", href: "/admin/analytics/customers" },
+      { name: "Advertisement", href: "/admin/performance/advertisement" },
+      { name: "Creative", href: "/admin/performance/creative" },
+      { name: "Recurring", href: "/admin/performance/recurring" },
+      { name: "Reports", href: "/admin/performance/reports" },
     ],
   },
 ];

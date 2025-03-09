@@ -69,7 +69,7 @@ export default function ChartCard<T extends ChartType>({
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="h-[300px] w-full animate-pulse rounded bg-gray-200" />
+          <div className="h-[300px] w-full animate-pulse rounded bg-neutral-800" />
         ) : (
           <div className="h-[300px]">
             {type === "line" ? (

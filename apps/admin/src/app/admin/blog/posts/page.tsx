@@ -1,155 +1,183 @@
-import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+"use client";
 
-// Mock data for initial UI development
-const mockPosts = [
-  {
-    id: 1,
-    title: "Getting Started with Kurta Fashion",
-    excerpt: "Learn about the history and styles of traditional kurta wear...",
-    status: "Published",
-    author: "Admin User",
-    category: "Fashion",
-    publishedAt: "2024-03-05",
-  },
-  {
-    id: 2,
-    title: "Top 10 Kurta Trends for 2024",
-    excerpt: "Discover the latest trends in kurta fashion for the upcoming...",
-    status: "Draft",
-    author: "Content Writer",
-    category: "Trends",
-    publishedAt: null,
-  },
-  // Add more mock posts as needed
-];
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { AlertCircle, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+
+interface Post {
+  id: string;
+  title: string;
+  slug: string;
+  status: "draft" | "published";
+  author: {
+    first_name: string;
+    last_name: string;
+  };
+  created_at: string;
+}
 
 export default function BlogPostsPage() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchPosts() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error } = await supabase
+          .from("blog_posts")
+          .select(`*, author:users(first_name, last_name)`)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        setPosts(data || []);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        setError("Failed to load posts. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPosts();
+  }, []);
+
   return (
-    <div>
-      <div className="mb-8 flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Blog Posts</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-xl font-medium text-white">Blog Posts</h1>
+          <p className="mt-1 text-sm text-neutral-400">
             Manage your blog posts and content
           </p>
         </div>
-        <Link
-          href="/admin/blog/posts/new"
-          className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus className="mr-2 h-4 w-4" />
+        <Button className="bg-white text-neutral-900 hover:bg-neutral-100">
+          <Plus className="h-4 w-4 mr-2" />
           New Post
-        </Link>
+        </Button>
       </div>
 
-      {/* Filters and Search */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <select className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
-            <option value="all">All Categories</option>
-            <option value="fashion">Fashion</option>
-            <option value="trends">Trends</option>
-            <option value="culture">Culture</option>
-          </select>
-          <select className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
-            <option value="all">All Status</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
-          </select>
+      {error && (
+        <div className="rounded-lg bg-red-500/10 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-400">Error</h3>
+              <div className="mt-2 text-sm text-red-400">{error}</div>
+            </div>
+          </div>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search posts..."
-            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm"
-          />
-        </div>
-      </div>
+      )}
 
-      {/* Posts Table */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Title
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Category
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Author
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Date
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {mockPosts.map((post) => (
-              <tr key={post.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {post.title}
-                    </div>
-                    <div className="text-sm text-gray-500">{post.excerpt}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {post.category}
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                      post.status === "Published"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {post.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {post.author}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {post.publishedAt || "—"}
-                </td>
-                <td className="px-6 py-4 text-right text-sm">
-                  <Link
-                    href={`/admin/blog/posts/${post.id}`}
-                    className="font-medium text-blue-600 hover:text-blue-500"
-                  >
-                    Edit
-                  </Link>
-                </td>
+      <div className="rounded-lg border border-neutral-800 bg-neutral-950">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-neutral-800">
+            <thead>
+              <tr>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider"
+                >
+                  Title
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider"
+                >
+                  Author
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider"
+                >
+                  Status
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider"
+                >
+                  Created
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider"
+                >
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      <div className="mt-6 flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          Showing 1 to {mockPosts.length} of {mockPosts.length} results
-        </div>
-        <div className="flex gap-2">
-          <button className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            Previous
-          </button>
-          <button className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            Next
-          </button>
+            </thead>
+            <tbody className="divide-y divide-neutral-800">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <tr key={index}>
+                    <td colSpan={5} className="px-6 py-4">
+                      <div className="animate-pulse flex space-x-4">
+                        <div className="h-4 bg-neutral-800 rounded w-3/4"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : posts.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-center text-sm text-neutral-400"
+                  >
+                    No posts found
+                  </td>
+                </tr>
+              ) : (
+                posts.map((post) => (
+                  <tr key={post.id} className="hover:bg-neutral-900">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-white">
+                          {post.title}
+                        </span>
+                        <span className="text-sm text-neutral-400">
+                          {post.slug}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-400">
+                      {post.author
+                        ? `${post.author.first_name} ${post.author.last_name}`
+                        : "Unknown"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          post.status === "published"
+                            ? "bg-green-500/10 text-green-400"
+                            : "bg-yellow-500/10 text-yellow-400"
+                        }`}
+                      >
+                        {post.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-400">
+                      {format(new Date(post.created_at), "MMM d, yyyy")}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                      <button className="text-blue-400 hover:text-blue-300">
+                        Edit
+                      </button>
+                      <button className="text-red-400 hover:text-red-300">
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
