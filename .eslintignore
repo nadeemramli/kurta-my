@@ -1,0 +1,29 @@
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Generated files
+**/*.d.ts
+coverage/
+.turbo/
+
+# Specific package directories that might need exclusion
+packages/*/dist/
+apps/*/dist/
+
+# Config files
+**/.eslintrc.js
+**/jest.config.js
+**/next.config.js
+**/tailwind.config.js
+**/postcss.config.js
+
+# Misc
+.github/
+.vscode/ 

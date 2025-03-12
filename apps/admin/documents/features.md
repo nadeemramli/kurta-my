@@ -25,8 +25,9 @@
       - Product Carousel (product carousel components for the add-to-cart page, and product detail page, homepage, etc.)
       - Product Detail (product detail page, for user to see the product details and add to cart, select variant, etc.)
 
-# Customers 
-- Customers
+# Customers
+- Backend (Admin App) 
+   - Customers (this is where user can see all the customers and their details)
 - Segments
 
    - Relationship with Frontend App
@@ -57,3 +58,7 @@ Customer communication channel (WhatsApp (WhatsApp Business API), (SMS, Email) u
 - Creative
 - Recurring
 - Reports
+
+
+
+Done deploy
