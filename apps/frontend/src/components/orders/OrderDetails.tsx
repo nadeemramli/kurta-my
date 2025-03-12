@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { formatPrice } from "@/lib/utils";
 import { OrderStatusBadge } from "./OrderStatusBadge";
