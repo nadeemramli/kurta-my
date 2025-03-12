@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { formatPrice, cn } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -141,11 +141,11 @@ export function ProductList({ initialProducts = [] }: ProductListProps) {
                   </h3>
                   <div className="mt-1 text-sm text-muted-foreground">
                     {product.price_range.min === product.price_range.max ? (
-                      formatPrice(product.price_range.min)
+                      formatCurrency(product.price_range.min)
                     ) : (
                       <>
-                        {formatPrice(product.price_range.min)} -{" "}
-                        {formatPrice(product.price_range.max)}
+                        {formatCurrency(product.price_range.min)} -{" "}
+                        {formatCurrency(product.price_range.max)}
                       </>
                     )}
                   </div>
