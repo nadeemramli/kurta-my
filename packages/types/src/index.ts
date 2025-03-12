@@ -123,5 +123,16 @@ export type SortFilterItem = {
   reverse?: boolean;
 };
 
+export type ProductVariant = {
+  id: string;
+  sku: string;
+  name?: string;
+  price: number;
+  compareAtPrice?: number;
+  stockQuantity: number;
+  attributes: Record<string, string>;
+  status: string;
+};
+
 export * from './database';
 export * from './error'; 

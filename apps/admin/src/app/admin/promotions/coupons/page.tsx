@@ -9,6 +9,7 @@ import { CouponForm } from "@/components/promotions/coupon-form";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface Coupon {
   id: string;
@@ -26,6 +27,18 @@ interface Coupon {
   usage_count: number;
   total_discount: number;
   created_at: string;
+}
+
+interface CouponFormData {
+  code: string;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  min_purchase_amount?: number;
+  max_discount_amount?: number;
+  starts_at: Date;
+  ends_at?: Date;
+  usage_limit?: number;
+  description?: string;
 }
 
 export default function CouponsPage() {
@@ -58,27 +71,23 @@ export default function CouponsPage() {
     }
   };
 
-  const handleSubmit = async (formData: any) => {
+  const handleSubmit = async (data: CouponFormData) => {
     try {
-      if (selectedCoupon) {
-        // Update existing coupon
-        const { error } = await supabase
-          .from("coupons")
-          .update(formData)
-          .eq("id", selectedCoupon.id);
-        if (error) throw error;
-      } else {
-        // Create new coupon
-        const { error } = await supabase.from("coupons").insert([formData]);
-        if (error) throw error;
-      }
+      const formattedData = {
+        ...data,
+        starts_at: data.starts_at.toISOString(),
+        ends_at: data.ends_at?.toISOString(),
+      };
 
-      setIsFormOpen(false);
-      setSelectedCoupon(null);
+      const { error } = await supabase.from("coupons").insert([formattedData]);
+      if (error) throw error;
+
+      toast.success("Coupon created successfully");
+      // Refresh coupons list
       fetchCoupons();
-    } catch (error) {
-      console.error("Error saving coupon:", error);
-      throw new Error("Failed to save coupon. Please try again.");
+    } catch (err) {
+      console.error("Error creating coupon:", err);
+      toast.error("Failed to create coupon");
     }
   };
 

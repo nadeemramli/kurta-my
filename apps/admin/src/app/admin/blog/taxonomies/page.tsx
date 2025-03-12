@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ export default function TaxonomiesPage() {
     description: "",
   });
 
-  const fetchTaxonomies = async () => {
+  const fetchTaxonomies = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -61,11 +61,11 @@ export default function TaxonomiesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [type]);
 
   useEffect(() => {
     fetchTaxonomies();
-  }, [type, fetchTaxonomies]);
+  }, [fetchTaxonomies]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -18,12 +18,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  VariantAttributeType,
   VariantOption,
+  VariantAttributeType,
+  VARIANT_ATTRIBUTE_TYPES,
   VARIANT_TEMPLATES,
 } from "@/lib/types/products";
-import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface VariantOptionDialogProps {
   open: boolean;
@@ -46,56 +45,55 @@ export function VariantOptionDialog({
 
   const handleTypeSelect = (type: VariantAttributeType) => {
     setType(type);
-    if (type !== "custom" && VARIANT_TEMPLATES[type]) {
-      setName(VARIANT_TEMPLATES[type].label);
-    }
+    setName(VARIANT_ATTRIBUTE_TYPES[type]);
   };
 
   const handleAddValue = (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent form submission
-    if (newValue.trim()) {
-      setValues([...values, newValue.trim()]);
-      setAdditionalCosts({ ...additionalCosts, [newValue.trim()]: 0 });
+    e.preventDefault();
+    if (newValue && !values.includes(newValue)) {
+      setValues([...values, newValue]);
+      setAdditionalCosts({ ...additionalCosts, [newValue]: 0 });
       setNewValue("");
     }
   };
 
   const handleRemoveValue = (value: string) => {
     setValues(values.filter((v) => v !== value));
-    const newCosts = { ...additionalCosts };
-    delete newCosts[value];
-    setAdditionalCosts(newCosts);
+    const { [value]: _, ...rest } = additionalCosts;
+    setAdditionalCosts(rest);
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (name && values.length > 0) {
-      onSave({
+      const option: VariantOption = {
         type,
         name,
         values,
         additional_costs: additionalCosts,
-      });
+      };
+      onSave(option);
+      onOpenChange(false);
       // Reset form
       setType("size");
       setName("");
+      setNewValue("");
       setValues([]);
       setAdditionalCosts({});
-      onOpenChange(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Add Variant Option</DialogTitle>
           <DialogDescription>
-            Create a new option for product variants
+            Create a new option for your variant bracket
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSave} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>Option Type</Label>
             <Select value={type} onValueChange={handleTypeSelect}>
@@ -103,12 +101,11 @@ export function VariantOptionDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(VARIANT_TEMPLATES).map(([key, template]) => (
+                {Object.entries(VARIANT_ATTRIBUTE_TYPES).map(([key, label]) => (
                   <SelectItem key={key} value={key}>
-                    {template.label}
+                    {label}
                   </SelectItem>
                 ))}
-                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -118,8 +115,7 @@ export function VariantOptionDialog({
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={type === "custom" ? "Enter option name" : ""}
-              disabled={type !== "custom" && type in VARIANT_TEMPLATES}
+              placeholder="e.g., Size, Color, Material"
             />
           </div>
 

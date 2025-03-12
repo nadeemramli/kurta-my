@@ -27,7 +27,7 @@ export function VariantBracketDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault(); // Prevent form submission
     if (name) {
       const newBracket: VariantBracket = {
@@ -54,7 +54,7 @@ export function VariantBracketDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSave} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">Bracket Name</Label>
             <Input

@@ -693,7 +693,7 @@ __metadata:
     "@kurta-my/types": "workspace:*"
     "@kurta-my/utils": "workspace:*"
     "@supabase/supabase-js": "npm:latest"
-    typescript: "npm:^5.0.4"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -702,9 +702,9 @@ __metadata:
   resolution: "@kurta-my/auth@workspace:packages/auth"
   dependencies:
     "@supabase/supabase-js": "npm:^2.39.0"
-    "@types/node": "npm:^20.0.0"
+    "@types/node": "npm:^22.13.10"
     eslint: "npm:^8.0.0"
-    typescript: "npm:^5.0.0"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -718,7 +718,7 @@ __metadata:
     eslint-config-prettier: "npm:^8.8.0"
     eslint-config-turbo: "npm:^1.9.3"
     eslint-plugin-react: "npm:^7.32.2"
-    typescript: "npm:^5.0.4"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -729,7 +729,7 @@ __metadata:
     "@kurta-my/config": "workspace:*"
     "@kurta-my/types": "workspace:*"
     "@supabase/supabase-js": "npm:latest"
-    typescript: "npm:^5.0.4"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -740,7 +740,7 @@ __metadata:
     "@kurta-my/config": "workspace:*"
     "@kurta-my/types": "workspace:*"
     tsup: "npm:^8.0.0"
-    typescript: "npm:^5.0.4"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -751,7 +751,7 @@ __metadata:
     "@kurta-my/config": "workspace:*"
     "@kurta-my/types": "workspace:*"
     tsup: "npm:^8.0.0"
-    typescript: "npm:^5.0.4"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -760,7 +760,7 @@ __metadata:
   resolution: "@kurta-my/types@workspace:packages/types"
   dependencies:
     "@kurta-my/config": "workspace:*"
-    typescript: "npm:^5.0.4"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -770,7 +770,7 @@ __metadata:
   dependencies:
     "@kurta-my/config": "workspace:*"
     "@kurta-my/types": "workspace:*"
-    typescript: "npm:^5.0.4"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -1553,6 +1553,36 @@ __metadata:
     "@types/react-dom":
       optional: true
   checksum: 10c0/2f621c43a8e1dd0d54c828f8b4d88414c9114af6b720a650ad9587cc0a7a7536da778f2fe5181a38494cc2956f2b238fbe64790f6daad1d058b34f4acaee520e
+  languageName: node
+  linkType: hard
+
+"@radix-ui/react-toast@npm:^1.2.6":
+  version: 1.2.6
+  resolution: "@radix-ui/react-toast@npm:1.2.6"
+  dependencies:
+    "@radix-ui/primitive": "npm:1.1.1"
+    "@radix-ui/react-collection": "npm:1.1.2"
+    "@radix-ui/react-compose-refs": "npm:1.1.1"
+    "@radix-ui/react-context": "npm:1.1.1"
+    "@radix-ui/react-dismissable-layer": "npm:1.1.5"
+    "@radix-ui/react-portal": "npm:1.1.4"
+    "@radix-ui/react-presence": "npm:1.1.2"
+    "@radix-ui/react-primitive": "npm:2.0.2"
+    "@radix-ui/react-use-callback-ref": "npm:1.1.0"
+    "@radix-ui/react-use-controllable-state": "npm:1.1.0"
+    "@radix-ui/react-use-layout-effect": "npm:1.1.0"
+    "@radix-ui/react-visually-hidden": "npm:1.1.2"
+  peerDependencies:
+    "@types/react": "*"
+    "@types/react-dom": "*"
+    react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+    react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    "@types/react-dom":
+      optional: true
+  checksum: 10c0/34334eb835097de9474137bea41a68a5299ab3a2db7f88f4c9007c85ef19b8798f25771a726aed83a76c4f33ce4592b0a84d870d9754e0c2a9e23022fec9721a
   languageName: node
   linkType: hard
 
@@ -2597,12 +2627,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^20, @types/node@npm:^20.0.0":
+"@types/node@npm:*":
   version: 20.17.23
   resolution: "@types/node@npm:20.17.23"
   dependencies:
     undici-types: "npm:~6.19.2"
   checksum: 10c0/4f7da7383ee8516b2e580d772a196fd76487670bd9d32a296621c5df63b077cc7d06c2a0040885b3e4a28c1751f9ad3d5ed55cff15d50b707e3d454993bfe33a
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.13.10":
+  version: 22.13.10
+  resolution: "@types/node@npm:22.13.10"
+  dependencies:
+    undici-types: "npm:~6.20.0"
+  checksum: 10c0/a3865f9503d6f718002374f7b87efaadfae62faa499c1a33b12c527cfb9fd86f733e1a1b026b80c5a0e4a965701174bc3305595a7d36078aa1abcf09daa5dee9
   languageName: node
   linkType: hard
 
@@ -2955,7 +2994,7 @@ __metadata:
     "@tiptap/pm": "npm:^2.11.5"
     "@tiptap/react": "npm:^2.11.5"
     "@tiptap/starter-kit": "npm:^2.11.5"
-    "@types/node": "npm:^20"
+    "@types/node": "npm:^22.13.10"
     "@types/react": "npm:^19"
     "@types/react-dom": "npm:^19"
     autoprefixer: "npm:^10.4.18"
@@ -2973,10 +3012,12 @@ __metadata:
     react-chartjs-2: "npm:^5.2.0"
     react-day-picker: "npm:^9.5.1"
     react-dom: "npm:^19.0.0"
+    slugify: "npm:^1.6.6"
     sonner: "npm:^1.4.3"
     tailwind-merge: "npm:^3.0.2"
     tailwindcss: "npm:^4.0.9"
-    typescript: "npm:^5"
+    typescript: "npm:^5.8.2"
+    zod: "npm:^3.24.2"
   languageName: unknown
   linkType: soft
 
@@ -4673,13 +4714,14 @@ __metadata:
     "@radix-ui/react-select": "npm:^2.1.6"
     "@radix-ui/react-slider": "npm:^1.2.3"
     "@radix-ui/react-slot": "npm:^1.1.2"
+    "@radix-ui/react-toast": "npm:^1.2.6"
     "@supabase/auth-helpers-nextjs": "npm:^0.10.0"
     "@supabase/supabase-js": "npm:^2.49.1"
     "@tailwindcss/aspect-ratio": "npm:^0.4.2"
     "@tailwindcss/forms": "npm:^0.5.10"
     "@tailwindcss/postcss": "npm:^4.0.11"
     "@tailwindcss/typography": "npm:^0.5.16"
-    "@types/node": "npm:^20"
+    "@types/node": "npm:^22.13.10"
     "@types/react": "npm:^19"
     "@types/react-dom": "npm:^19"
     autoprefixer: "npm:^10.4.18"
@@ -4701,7 +4743,7 @@ __metadata:
     sonner: "npm:^1.4.3"
     tailwind-merge: "npm:^2.2.1"
     tailwindcss: "npm:4.0.11"
-    typescript: "npm:^5"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -7273,6 +7315,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"slugify@npm:^1.6.6":
+  version: 1.6.6
+  resolution: "slugify@npm:1.6.6"
+  checksum: 10c0/e7e63f08f389a371d6228bc19d64ec84360bf0a538333446cc49dbbf3971751a6d180d2f31551188dd007a65ca771e69f574e0283290a7825a818e90b75ef44d
+  languageName: node
+  linkType: hard
+
 "smart-buffer@npm:^4.2.0":
   version: 4.2.0
   resolution: "smart-buffer@npm:4.2.0"
@@ -7909,7 +7958,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5, typescript@npm:^5.0.0, typescript@npm:^5.0.4":
+"typescript@npm:^5.8.2":
   version: 5.8.2
   resolution: "typescript@npm:5.8.2"
   bin:
@@ -7919,7 +7968,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.0.0#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.0.4#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.8.2#optional!builtin<compat/typescript>":
   version: 5.8.2
   resolution: "typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>::version=5.8.2&hash=5786d5"
   bin:
@@ -7952,6 +8001,13 @@ __metadata:
   version: 6.19.8
   resolution: "undici-types@npm:6.19.8"
   checksum: 10c0/078afa5990fba110f6824823ace86073b4638f1d5112ee26e790155f481f2a868cc3e0615505b6f4282bdf74a3d8caad715fd809e870c2bb0704e3ea6082f344
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~6.20.0":
+  version: 6.20.0
+  resolution: "undici-types@npm:6.20.0"
+  checksum: 10c0/68e659a98898d6a836a9a59e6adf14a5d799707f5ea629433e025ac90d239f75e408e2e5ff086afc3cace26f8b26ee52155293564593fbb4a2f666af57fc59bf
   languageName: node
   linkType: hard
 
@@ -8236,5 +8292,12 @@ __metadata:
   version: 0.1.0
   resolution: "yocto-queue@npm:0.1.0"
   checksum: 10c0/dceb44c28578b31641e13695d200d34ec4ab3966a5729814d5445b194933c096b7ced71494ce53a0e8820685d1d010df8b2422e5bf2cdea7e469d97ffbea306f
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.24.2":
+  version: 3.24.2
+  resolution: "zod@npm:3.24.2"
+  checksum: 10c0/c638c7220150847f13ad90635b3e7d0321b36cce36f3fc6050ed960689594c949c326dfe2c6fa87c14b126ee5d370ccdebd6efb304f41ef5557a4aaca2824565
   languageName: node
   linkType: hard

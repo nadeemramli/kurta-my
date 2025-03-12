@@ -5,18 +5,16 @@ import { supabase } from "@/lib/supabase";
 import {
   ProductFormData,
   ProductMedia,
-  VariantOption,
-  VariantAttributeType,
-  VARIANT_ATTRIBUTE_TYPES,
   ProductCollection,
-  VariantBracket,
 } from "@/lib/types/products";
+import { validateProduct } from "@/lib/validations/product";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +35,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { VariantOptionDialog } from "./variant-option-dialog";
 import { VariantBracketDialog } from "./variant-bracket-dialog";
-import { HelpCircle, AlertCircle } from "lucide-react";
+import { HelpCircle, AlertCircle, X, Loader2 } from "lucide-react";
 import { MediaEditDialog } from "./media-edit-dialog";
 import {
   Command,
@@ -85,6 +83,28 @@ const formatNumberInput = (value: string): string => {
   const formatted = parts.join(".");
   // Remove leading zeros unless it's "0." or "0.0"
   return formatted.replace(/^0+(?=\d)/, "");
+};
+
+const formatPrice = (value: string): string => {
+  // Remove any non-digit characters except decimal point
+  const cleaned = value.replace(/[^\d.]/g, "");
+
+  // Handle empty input
+  if (!cleaned || cleaned === ".") return "";
+
+  // Ensure only one decimal point
+  const parts = cleaned.split(".");
+  if (parts.length > 2) {
+    parts[1] = parts.slice(1).join("");
+  }
+
+  // Limit decimal places to 2
+  if (parts[1]) {
+    parts[1] = parts[1].slice(0, 2);
+  }
+
+  // Join back with decimal point
+  return parts.join(".");
 };
 
 export const TooltipWithLink = ({
@@ -214,7 +234,7 @@ export function ProductSheet({
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(
     null
   );
-  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [showMediaDialog, setShowMediaDialog] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<ProductMedia | null>(null);
   const [newCollection, setNewCollection] = useState({
@@ -225,43 +245,212 @@ export function ProductSheet({
   const [showNewCollectionForm, setShowNewCollectionForm] = useState(false);
   const [showCollectionDialog, setShowCollectionDialog] = useState(false);
 
-  const handleMediaUpload = async (files: FileList) => {
-    const newMedia: ProductMedia[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+  // Load product data when editing
+  useEffect(() => {
+    const loadProduct = async () => {
+      if (!productId) return;
+
       try {
-        const { data, error } = await supabase.storage
-          .from("products")
-          .upload(`${Date.now()}-${file.name}`, file);
-
-        if (error) throw error;
-
-        if (data) {
-          const { data: publicUrl } = supabase.storage
-            .from("products")
-            .getPublicUrl(data.path);
-
-          newMedia.push({
-            id: data.path,
-            url: publicUrl.publicUrl,
-            type: file.type.startsWith("image/") ? "image" : "video",
-            position: formData.media.length + i,
-          });
+        const response = await fetch(`/api/products/${productId}`);
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to load product");
         }
+
+        const product = await response.json();
+        if (!product) throw new Error("Product not found");
+
+        setFormData({
+          title: product.title || "",
+          description: product.description || "",
+          status: product.status || "draft",
+          media: product.product_media || [],
+          price: product.price || 0,
+          compare_at_price: product.compare_at_price,
+          cost_per_item: product.cost_per_item,
+          charge_tax: product.charge_tax ?? true,
+          weight: product.weight,
+          weight_unit: product.weight_unit || "kg",
+          vendor: product.vendor,
+          type: product.type,
+          sku: product.sku,
+          barcode: product.barcode,
+          customs_info: product.customs_info || {},
+          seo_title: product.seo_title,
+          seo_description: product.seo_description,
+          track_quantity: product.track_quantity ?? true,
+          continue_selling_when_out_of_stock:
+            product.continue_selling_when_out_of_stock ?? false,
+          requires_shipping: product.requires_shipping ?? true,
+          variant_brackets: product.variant_brackets || [],
+          collections:
+            product.product_collections?.map((pc: any) => pc.collection) || [],
+          tags: product.meta_fields?.tags || [],
+          slug: product.meta_fields?.slug,
+        });
       } catch (error) {
-        console.error("Error uploading media:", error);
-        toast.error("Failed to upload media");
+        console.error("Error loading product:", error);
+        toast.error(
+          error instanceof Error ? error.message : "Failed to load product"
+        );
       }
+    };
+
+    loadProduct();
+  }, [productId]);
+
+  // Handle media upload
+  const handleMediaUpload = async (files: FileList) => {
+    try {
+      setSaving(true);
+
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("productId", productId || "temp");
+
+        const response = await fetch("/api/products/media", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to upload media");
+        }
+
+        const media = await response.json();
+
+        setFormData((prev) => ({
+          ...prev,
+          media: [
+            ...prev.media,
+            {
+              ...media,
+              position: prev.media.length,
+            },
+          ],
+        }));
+
+        toast.success(`Uploaded ${file.name}`);
+      }
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload media"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle media deletion
+  const handleMediaDelete = async (media: ProductMedia) => {
+    try {
+      const filePath = new URL(media.url).pathname.split("/").pop();
+      if (!filePath) throw new Error("Invalid file path");
+
+      const response = await fetch(
+        `/api/products/media?path=${encodeURIComponent(
+          filePath
+        )}&productId=${productId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete media");
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        media: prev.media.filter((m) => m.id !== media.id),
+      }));
+
+      toast.success("Media deleted successfully");
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete media"
+      );
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const validation = validateProduct(formData);
+    if (!validation.success) {
+      setErrors(validation.errors || {});
+      toast.error("Please fix the validation errors");
+      return;
     }
 
-    setFormData((prev) => ({
+    try {
+      setSaving(true);
+
+      const endpoint = productId
+        ? `/api/products/${productId}`
+        : "/api/products";
+
+      const response = await fetch(endpoint, {
+        method: productId ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(validation.data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(
+          error.message ||
+            error.error ||
+            `Failed to ${productId ? "update" : "create"} product`
+        );
+      }
+
+      const savedProduct = await response.json();
+
+      toast.success(
+        `Product ${productId ? "updated" : "created"} successfully`
+      );
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error saving product:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save product"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePriceInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: keyof ProductFormData
+  ) => {
+    const input = e.target;
+    const cursorPosition = input.selectionStart || 0;
+    const newValue = formatPrice(input.value);
+
+    setFormData((prev: ProductFormData) => ({
       ...prev,
-      media: [...prev.media, ...newMedia],
+      [field]: newValue ? parseFloat(newValue) : 0,
     }));
+
+    // Schedule cursor position update after React re-render
+    requestAnimationFrame(() => {
+      input.setSelectionRange(cursorPosition, cursorPosition);
+    });
   };
 
   const validateForm = (): boolean => {
-    const newErrors: ValidationErrors = {};
+    const newErrors: Record<string, string> = {};
 
     // Basic required fields
     if (!formData.title.trim()) {
@@ -350,99 +539,6 @@ export function ProductSheet({
     }
   }, [productId, collections]);
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      // Create or update product
-      const productData = {
-        title: formData.title,
-        description: formData.description,
-        status: formData.status,
-        price: formData.price,
-        compare_at_price: formData.compare_at_price,
-        cost_per_item: formData.cost_per_item,
-        charge_tax: formData.charge_tax,
-        weight: formData.weight,
-        weight_unit: formData.weight_unit,
-        vendor: formData.vendor,
-        type: formData.type,
-        sku: formData.sku,
-        barcode: formData.barcode,
-        customs_info: formData.customs_info,
-        seo_title: formData.seo_title,
-        seo_description: formData.seo_description,
-        track_quantity: formData.track_quantity,
-        continue_selling_when_out_of_stock:
-          formData.continue_selling_when_out_of_stock,
-        requires_shipping: formData.requires_shipping,
-      };
-
-      let savedProductId = productId;
-
-      if (savedProductId) {
-        // Update existing product
-        const { error: updateError } = await supabase
-          .from("products")
-          .update(productData)
-          .eq("id", savedProductId);
-
-        if (updateError) throw updateError;
-      } else {
-        // Create new product
-        const { data: newProduct, error: insertError } = await supabase
-          .from("products")
-          .insert(productData)
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-        savedProductId = newProduct.id;
-      }
-
-      // Update product collections
-      if (savedProductId) {
-        // First, delete all existing product collections
-        const { error: deleteError } = await supabase
-          .from("product_collections")
-          .delete()
-          .eq("product_id", savedProductId);
-
-        if (deleteError) throw deleteError;
-
-        // Then, insert new product collections
-        if (formData.collections.length > 0) {
-          const { error: insertError } = await supabase
-            .from("product_collections")
-            .insert(
-              formData.collections.map((collection) => ({
-                product_id: savedProductId,
-                collection_id: collection.id,
-              }))
-            );
-
-          if (insertError) throw insertError;
-        }
-      }
-
-      toast.success(
-        `Product ${savedProductId ? "updated" : "created"} successfully`
-      );
-      onSuccess?.();
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Error saving product:", error);
-      toast.error("Failed to save product");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleCreateCollection = async () => {
     try {
       if (!newCollection.title) {
@@ -500,6 +596,11 @@ export function ProductSheet({
     }));
   };
 
+  // Clear errors when form data changes
+  useEffect(() => {
+    setErrors({});
+  }, [formData]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full max-w-3xl overflow-y-auto">
@@ -519,8 +620,9 @@ export function ProductSheet({
             <TabsTrigger value="variants">Variants</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
             <TabsTrigger value="seo">SEO</TabsTrigger>
-            <TabsTrigger value="organization">Organization</TabsTrigger>
           </TabsList>
+
+          <div className="h-px bg-neutral-800 my-6" />
 
           <form onSubmit={handleSubmit} className="space-y-6 py-6">
             <TabsContent value="basic" className="space-y-4">
@@ -766,173 +868,170 @@ export function ProductSheet({
             </TabsContent>
 
             <TabsContent value="pricing" className="space-y-6">
-              {/* Cost and Profit Margin */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="cost_per_item"
-                    className="flex items-center gap-2"
-                  >
-                    Cost per item (RM)
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="cost_per_item"
-                    type="text"
-                    inputMode="decimal"
-                    value={formData.cost_per_item?.toFixed(2) || ""}
-                    onChange={(e) => {
-                      const formatted = formatNumberInput(e.target.value);
-                      if (formatted === "") {
-                        setFormData({
-                          ...formData,
-                          cost_per_item: undefined,
-                        });
-                        return;
-                      }
-                      const value = parseFloat(formatted);
-                      if (!isNaN(value)) {
-                        setFormData({
-                          ...formData,
-                          cost_per_item: value,
-                        });
-                      }
-                    }}
-                    className={errors.cost_per_item ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.cost_per_item && (
-                    <div className="flex items-center gap-2 text-red-500 text-sm">
-                      <AlertCircle className="h-4 w-4" />
-                      <span>{errors.cost_per_item}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Profit Margin Calculation */}
-                {formData.cost_per_item && formData.price ? (
-                  <div className="rounded-lg border border-neutral-800 p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-neutral-400">
-                        Cost per item
-                      </span>
-                      <span>{formatCurrency(formData.cost_per_item)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-neutral-400">
-                        Sale price
-                      </span>
-                      <span>{formatCurrency(formData.price)}</span>
-                    </div>
-                    <div className="border-t border-neutral-800 pt-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">
-                          Profit margin
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span>
-                            {formatCurrency(
-                              formData.price - formData.cost_per_item
-                            )}
-                          </span>
-                          <span className="text-sm text-neutral-400">
-                            (
-                            {Math.round(
-                              ((formData.price - formData.cost_per_item) /
-                                formData.price) *
-                                100
-                            )}
-                            %)
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
               {/* Customer-facing prices */}
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price" className="flex items-center gap-2">
-                    Sale Price (RM)
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="price"
-                    type="text"
-                    inputMode="decimal"
-                    value={formData.price.toFixed(2)}
-                    onChange={(e) => {
-                      const formatted = formatNumberInput(e.target.value);
-                      if (formatted === "") return;
-                      const value = parseFloat(formatted);
-                      if (!isNaN(value)) {
-                        setFormData({
-                          ...formData,
-                          price: value,
-                        });
-                      }
-                    }}
-                    className={errors.price ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.price && (
-                    <div className="flex items-center gap-2 text-red-500 text-sm">
-                      <AlertCircle className="h-4 w-4" />
-                      <span>{errors.price}</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
+                        RM
+                      </span>
+                      <Input
+                        id="price"
+                        type="text"
+                        inputMode="decimal"
+                        value={
+                          formData.price === 0 ? "" : formData.price.toFixed(2)
+                        }
+                        onChange={(e) => handlePriceInput(e, "price")}
+                        onBlur={(e) => {
+                          const value = parseFloat(e.target.value || "0");
+                          setFormData((prev) => ({
+                            ...prev,
+                            price: Number(value.toFixed(2)),
+                          }));
+                        }}
+                        placeholder="0.00"
+                        className="pl-10"
+                      />
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="compare_at_price">
-                    Compare at Price (RM)
-                    <span className="ml-1 text-xs text-neutral-500">
+                  <div className="space-y-2">
+                    <Label htmlFor="compare_at_price">Compare-at price</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
+                        RM
+                      </span>
+                      <Input
+                        id="compare_at_price"
+                        type="text"
+                        inputMode="decimal"
+                        value={
+                          formData.compare_at_price
+                            ? formData.compare_at_price.toFixed(2)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          handlePriceInput(e, "compare_at_price")
+                        }
+                        onBlur={(e) => {
+                          const value = e.target.value
+                            ? parseFloat(e.target.value)
+                            : undefined;
+                          setFormData((prev) => ({
+                            ...prev,
+                            compare_at_price: value
+                              ? Number(value.toFixed(2))
+                              : undefined,
+                          }));
+                        }}
+                        placeholder="0.00"
+                        className="pl-10"
+                      />
+                    </div>
+                    <span className="text-xs text-neutral-500">
                       (Original price)
                     </span>
-                  </Label>
-                  <Input
-                    id="compare_at_price"
-                    type="text"
-                    inputMode="decimal"
-                    value={formData.compare_at_price?.toFixed(2) || ""}
-                    onChange={(e) => {
-                      const formatted = formatNumberInput(e.target.value);
-                      if (formatted === "") {
-                        setFormData({
-                          ...formData,
-                          compare_at_price: undefined,
-                        });
-                        return;
-                      }
-                      const value = parseFloat(formatted);
-                      if (!isNaN(value)) {
-                        setFormData({
-                          ...formData,
-                          compare_at_price: value,
-                        });
-                      }
-                    }}
-                    placeholder="0.00"
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="charge_tax">
+                      Charge tax on this product
+                    </Label>
+                    <p className="text-sm text-neutral-500">
+                      Include this product in tax calculations
+                    </p>
+                  </div>
+                  <Switch
+                    id="charge_tax"
+                    checked={formData.charge_tax}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, charge_tax: checked })
+                    }
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="charge_tax">Charge tax on this product</Label>
-                  <p className="text-sm text-neutral-500">
-                    Include this product in tax calculations
-                  </p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="cost_per_item">Cost per item</Label>
+                      <TooltipWithLink text="This is for your own reference and won't be visible to customers" />
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
+                        RM
+                      </span>
+                      <Input
+                        id="cost_per_item"
+                        type="text"
+                        inputMode="decimal"
+                        value={
+                          formData.cost_per_item
+                            ? formData.cost_per_item.toFixed(2)
+                            : ""
+                        }
+                        onChange={(e) => handlePriceInput(e, "cost_per_item")}
+                        onBlur={(e) => {
+                          const value = e.target.value
+                            ? parseFloat(e.target.value)
+                            : undefined;
+                          setFormData((prev) => ({
+                            ...prev,
+                            cost_per_item: value
+                              ? Number(value.toFixed(2))
+                              : undefined,
+                          }));
+                        }}
+                        placeholder="0.00"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Profit</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
+                        RM
+                      </span>
+                      <Input
+                        value={
+                          formData.cost_per_item
+                            ? (formData.price - formData.cost_per_item).toFixed(
+                                2
+                              )
+                            : "--"
+                        }
+                        className="pl-10"
+                        readOnly
+                        disabled
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Margin</Label>
+                    <Input
+                      value={
+                        formData.cost_per_item && formData.price
+                          ? `${(
+                              ((formData.price - formData.cost_per_item) /
+                                formData.price) *
+                              100
+                            ).toFixed(2)}%`
+                          : "--"
+                      }
+                      readOnly
+                      disabled
+                    />
+                  </div>
                 </div>
-                <Switch
-                  id="charge_tax"
-                  checked={formData.charge_tax}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, charge_tax: checked })
-                  }
-                />
               </div>
             </TabsContent>
 
@@ -1069,69 +1168,100 @@ export function ProductSheet({
               <div className="grid gap-4">
                 <div className="border border-dashed border-neutral-800 rounded-lg p-8">
                   <div className="flex flex-col items-center justify-center gap-4">
-                    <div className="text-center">
-                      <p className="text-sm text-neutral-400">
-                        Drag and drop your product images here, or click to
-                        select files
-                      </p>
-                      <p className="text-xs text-neutral-500 mt-1">
-                        Supported formats: PNG, JPG, GIF up to 5MB
-                      </p>
-                    </div>
-                    <Input
+                    <input
                       type="file"
+                      id="media-upload"
                       accept="image/*"
                       multiple
-                      className="cursor-pointer"
-                      onChange={(e) =>
-                        e.target.files && handleMediaUpload(e.target.files)
-                      }
+                      className="hidden"
+                      onChange={(e) => {
+                        e.preventDefault();
+                        e.target.files && handleMediaUpload(e.target.files);
+                      }}
                     />
+                    <div className="text-center">
+                      <p className="text-sm text-neutral-400">
+                        Drag and drop your product images here
+                      </p>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        Supported formats: PNG, JPG, WebP up to 5MB
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        document.getElementById("media-upload")?.click();
+                      }}
+                      disabled={saving}
+                      className="relative"
+                    >
+                      {saving ? (
+                        <>
+                          <span className="animate-pulse">Uploading...</span>
+                          <div className="absolute inset-0 bg-neutral-900/50 rounded-md" />
+                        </>
+                      ) : (
+                        "Choose Files"
+                      )}
+                    </Button>
                   </div>
                 </div>
 
                 {formData.media.length > 0 && (
-                  <div className="grid grid-cols-4 gap-4">
-                    {formData.media.map((media, index) => (
-                      <div key={index} className="relative aspect-square group">
-                        <img
-                          src={media.url}
-                          alt={media.alt || ""}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedMedia(media);
-                              setShowMediaDialog(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() =>
-                              setFormData({
-                                ...formData,
-                                media: formData.media.filter(
-                                  (_, i) => i !== index
-                                ),
-                              })
-                            }
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                        {media.alt && (
-                          <div className="absolute bottom-2 left-2 right-2 px-2 py-1 bg-black/75 rounded text-xs text-white truncate">
-                            {media.alt}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium">Product Images</h4>
+                      <p className="text-xs text-neutral-500">
+                        {formData.media.length} images
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4">
+                      {formData.media.map((media, index) => (
+                        <Card
+                          key={index}
+                          className="relative group overflow-hidden"
+                        >
+                          <div className="aspect-square">
+                            <img
+                              src={media.url}
+                              alt={media.alt || ""}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedMedia(media);
+                                setShowMediaDialog(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleMediaDelete(media)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                          {media.alt && (
+                            <div className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-black/75 text-xs text-white truncate">
+                              {media.alt}
+                            </div>
+                          )}
+                          {index === 0 && (
+                            <div className="absolute top-2 left-2 px-2 py-1 bg-neutral-900/90 rounded text-xs">
+                              Main Image
+                            </div>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1285,7 +1415,14 @@ export function ProductSheet({
                 Cancel
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? "Saving..." : "Save Product"}
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Product"
+                )}
               </Button>
             </div>
           </form>

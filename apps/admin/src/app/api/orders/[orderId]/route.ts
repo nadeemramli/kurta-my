@@ -1,179 +1,209 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/session";
+import { updateOrderSchema } from "@/lib/validations/orders";
+import { supabase } from "@/lib/supabase";
+import { type Order } from "@/lib/types/orders";
+import { ZodError } from "zod";
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { orderId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
     const { data: order, error } = await supabase
-      .from('orders')
+      .from("orders")
       .select(`
         *,
-        customer:customers(
-          id,
-          first_name,
-          last_name,
-          email,
-          phone
-        ),
+        customer:customers(*),
         items:order_items(
-          id,
-          quantity,
-          unit_price,
-          total_price,
+          *,
           product:products(
             id,
             title,
             sku,
-            inventory_quantity
+            image
           )
         )
       `)
-      .eq('id', params.orderId)
+      .eq("id", params.orderId)
       .single();
 
     if (error) {
-      throw error;
+      console.error("Error fetching order:", error);
+      return NextResponse.json(
+        { message: "Failed to fetch order" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ order });
-  } catch (error) {
-    console.error('Error fetching order:', error);
+    if (!order) {
+      return NextResponse.json(
+        { message: "Order not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(order as Order);
+  } catch (error: unknown) {
+    console.error("Error processing request:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch order' },
+      { message: "Internal server error" },
       { status: 500 }
     );
   }
 }
 
-export async function PATCH(
-  request: Request,
+export async function PUT(
+  request: NextRequest,
   { params }: { params: { orderId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const body = await request.json();
-
-    // Handle different update types
-    switch (body.action) {
-      case 'update_status':
-        await supabase.rpc('update_order_status', {
-          p_order_id: params.orderId,
-          p_status: body.status,
-          p_payment_status: body.payment_status
-        });
-        break;
-
-      case 'cancel_order':
-        // First check if order can be cancelled
-        const { data: order } = await supabase
-          .from('orders')
-          .select('status')
-          .eq('id', params.orderId)
-          .single();
-
-        if (order?.status === 'completed') {
-          return NextResponse.json(
-            { error: 'Cannot cancel completed order' },
-            { status: 400 }
-          );
-        }
-
-        await supabase.rpc('update_order_status', {
-          p_order_id: params.orderId,
-          p_status: 'cancelled',
-          p_payment_status: 'failed'
-        });
-        break;
-
-      case 'update_shipping':
-        await supabase.rpc('apply_shipping_cost', {
-          p_order_id: params.orderId,
-          p_shipping_amount: body.shipping_amount
-        });
-        break;
-
-      case 'update_tax':
-        await supabase.rpc('apply_tax', {
-          p_order_id: params.orderId,
-          p_tax_amount: body.tax_amount
-        });
-        break;
-
-      case 'apply_discount':
-        await supabase.rpc('apply_discount', {
-          p_order_id: params.orderId,
-          p_discount_amount: body.discount_amount
-        });
-        break;
-
-      default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    // Fetch and return updated order
-    const { data: updatedOrder, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('id', params.orderId)
+    const body = await request.json();
+    const validatedData = updateOrderSchema.parse(body);
+
+    const { data: order, error: updateError } = await supabase
+      .from("orders")
+      .update(validatedData)
+      .eq("id", params.orderId)
+      .select()
       .single();
 
-    if (error) {
-      throw error;
+    if (updateError) {
+      console.error("Error updating order:", updateError);
+      return NextResponse.json(
+        { message: "Failed to update order" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ order: updatedOrder });
-  } catch (error) {
-    console.error('Error updating order:', error);
+    if (!order) {
+      return NextResponse.json(
+        { message: "Order not found" },
+        { status: 404 }
+      );
+    }
+
+    const { data: completeOrder, error: fetchError } = await supabase
+      .from("orders")
+      .select(`
+        *,
+        customer:customers(*),
+        items:order_items(
+          *,
+          product:products(
+            id,
+            title,
+            sku,
+            image
+          )
+        )
+      `)
+      .eq("id", params.orderId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching updated order:", fetchError);
+      return NextResponse.json(
+        { message: "Failed to fetch updated order" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(completeOrder as Order);
+  } catch (error: unknown) {
+    console.error("Error processing request:", error);
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { message: "Invalid request data", errors: error.errors },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
-      { error: 'Failed to update order' },
+      { message: "Internal server error" },
       { status: 500 }
     );
   }
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { orderId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
     // Only allow deletion of draft orders
-    const { data: order } = await supabase
-      .from('orders')
-      .select('status')
-      .eq('id', params.orderId)
+    const { data: order, error: fetchError } = await supabase
+      .from("orders")
+      .select("status")
+      .eq("id", params.orderId)
       .single();
 
-    if (order?.status !== 'draft') {
+    if (fetchError) {
+      console.error("Error fetching order:", fetchError);
       return NextResponse.json(
-        { error: 'Can only delete draft orders' },
+        { message: "Failed to fetch order" },
+        { status: 500 }
+      );
+    }
+
+    if (!order) {
+      return NextResponse.json(
+        { message: "Order not found" },
+        { status: 404 }
+      );
+    }
+
+    if (order.status !== "draft") {
+      return NextResponse.json(
+        { message: "Only draft orders can be deleted" },
         { status: 400 }
       );
     }
 
-    const { error } = await supabase
-      .from('orders')
+    const { error: deleteError } = await supabase
+      .from("orders")
       .delete()
-      .eq('id', params.orderId);
+      .eq("id", params.orderId);
 
-    if (error) {
-      throw error;
+    if (deleteError) {
+      console.error("Error deleting order:", deleteError);
+      return NextResponse.json(
+        { message: "Failed to delete order" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting order:', error);
     return NextResponse.json(
-      { error: 'Failed to delete order' },
+      { message: "Order deleted successfully" },
+      { status: 200 }
+    );
+  } catch (error: unknown) {
+    console.error("Error processing request:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
       { status: 500 }
     );
   }

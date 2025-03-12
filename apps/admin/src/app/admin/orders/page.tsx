@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Database } from "@kurta-my/database";
 import {
@@ -112,28 +112,7 @@ export default function OrdersPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showNewOrderSheet, setShowNewOrderSheet] = useState(false);
 
-  useEffect(() => {
-    async function fetchTags() {
-      try {
-        const { data, error } = await supabase
-          .from("order_tags")
-          .select("tag_name")
-          .eq("id", "id"); // This creates a unique constraint to get distinct values
-
-        if (error) throw error;
-        const uniqueTags = Array.from(
-          new Set(data.map((t: OrderTag) => t.tag_name))
-        );
-        setAvailableTags(uniqueTags);
-      } catch (error) {
-        console.error("Error fetching tags:", error);
-      }
-    }
-
-    fetchTags();
-  }, []);
-
-  async function fetchOrders() {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -167,7 +146,7 @@ export default function OrdersPage() {
       let filteredOrders =
         data?.map((order) => ({
           ...order,
-          tags: order.tags?.map((t: any) => t.tag_name) || [],
+          tags: order.tags?.map((t: { tag_name: string }) => t.tag_name) || [],
         })) || [];
 
       // Apply client-side filters
@@ -194,11 +173,32 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filters]);
 
   useEffect(() => {
     fetchOrders();
-  }, [filters]);
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    async function fetchTags() {
+      try {
+        const { data, error } = await supabase
+          .from("order_tags")
+          .select("tag_name")
+          .eq("id", "id"); // This creates a unique constraint to get distinct values
+
+        if (error) throw error;
+        const uniqueTags = Array.from(
+          new Set(data.map((t: OrderTag) => t.tag_name))
+        );
+        setAvailableTags(uniqueTags);
+      } catch (error) {
+        console.error("Error fetching tags:", error);
+      }
+    }
+
+    fetchTags();
+  }, []);
 
   const handleFilterChange = (
     key: keyof FilterOptions,
@@ -326,28 +326,6 @@ export default function OrdersPage() {
       </div>
     </div>
   );
-
-  const handleStatusChange = async (
-    orderId: string,
-    newStatus: OrderStatus
-  ) => {
-    try {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: newStatus })
-        .eq("id", orderId);
-
-      if (error) throw error;
-
-      setOrders(
-        orders.map((order) =>
-          order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      );
-    } catch (error) {
-      console.error("Error updating order status:", error);
-    }
-  };
 
   const renderListView = () => (
     <div className="space-y-4">
@@ -673,6 +651,8 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
+
+      {loading && <div>Loading orders...</div>}
 
       {viewMode === "list" && renderListView()}
       {viewMode === "kanban" && renderKanbanView()}

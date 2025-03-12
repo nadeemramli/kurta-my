@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Plus, Trash2, Save } from "lucide-react";
+import type { CustomerSegmentCriteria } from "@kurta-my/database/types/customer";
 
 type Operator =
   | "equals"
@@ -19,18 +20,19 @@ type Operator =
   | "contains"
   | "greater_than"
   | "less_than"
-  | "between"
-  | "in_list";
+  | "not_contains"
+  | "in"
+  | "not_in";
 
 interface Rule {
   id: string;
   field: string;
   operator: Operator;
-  value: string | number | string[];
+  value: string | number | Array<string | number>;
 }
 
 interface SegmentBuilderProps {
-  onSave: (rules: Rule[]) => Promise<void>;
+  onSave: (criteria: CustomerSegmentCriteria) => Promise<void>;
   initialRules?: Rule[];
 }
 
@@ -48,6 +50,36 @@ const AVAILABLE_FIELDS = [
   { value: "first_order_date", label: "First Order Date", type: "date" },
   { value: "location", label: "Location", type: "string" },
   { value: "signup_date", label: "Sign Up Date", type: "date" },
+  {
+    value: "purchase_frequency",
+    label: "Purchase Frequency (days)",
+    type: "number",
+  },
+  {
+    value: "days_since_last_order",
+    label: "Days Since Last Order",
+    type: "number",
+  },
+  { value: "lifetime_value", label: "Customer Lifetime Value", type: "number" },
+  {
+    value: "product_categories",
+    label: "Product Categories Purchased",
+    type: "array",
+  },
+  { value: "order_channels", label: "Order Channels", type: "array" },
+  { value: "payment_methods", label: "Payment Methods Used", type: "array" },
+  { value: "discount_usage", label: "Discount Usage Count", type: "number" },
+  {
+    value: "cart_abandonment_rate",
+    label: "Cart Abandonment Rate",
+    type: "number",
+  },
+  {
+    value: "average_items_per_order",
+    label: "Avg Items per Order",
+    type: "number",
+  },
+  { value: "return_rate", label: "Return Rate", type: "number" },
 ];
 
 const OPERATORS: Record<
@@ -61,7 +93,6 @@ const OPERATORS: Record<
       { value: "not_equals", label: "Does not equal" },
       { value: "greater_than", label: "Greater than" },
       { value: "less_than", label: "Less than" },
-      { value: "between", label: "Between" },
     ],
   },
   string: {
@@ -70,13 +101,14 @@ const OPERATORS: Record<
       { value: "equals", label: "Equals" },
       { value: "not_equals", label: "Does not equal" },
       { value: "contains", label: "Contains" },
+      { value: "not_contains", label: "Does not contain" },
     ],
   },
   array: {
     label: "List",
     operators: [
-      { value: "in_list", label: "Includes any" },
-      { value: "not_equals", label: "Does not include" },
+      { value: "in", label: "Includes any" },
+      { value: "not_in", label: "Does not include" },
     ],
   },
   date: {
@@ -85,10 +117,18 @@ const OPERATORS: Record<
       { value: "equals", label: "On" },
       { value: "greater_than", label: "After" },
       { value: "less_than", label: "Before" },
-      { value: "between", label: "Between" },
     ],
   },
 };
+
+interface SegmentAnalytics {
+  estimatedSize: number;
+  averageOrderValue: number;
+  totalRevenue: number;
+  orderFrequency: number;
+  topProducts: Array<{ name: string; count: number }>;
+  topCategories: Array<{ name: string; count: number }>;
+}
 
 export function SegmentBuilder({
   onSave,
@@ -96,6 +136,9 @@ export function SegmentBuilder({
 }: SegmentBuilderProps) {
   const [rules, setRules] = useState<Rule[]>(initialRules);
   const [loading, setLoading] = useState(false);
+  const [analytics, setAnalytics] = useState<SegmentAnalytics | null>(null);
+  const [matchType, setMatchType] = useState<"all" | "any">("all");
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const addRule = () => {
     const newRule: Rule = {
@@ -117,10 +160,60 @@ export function SegmentBuilder({
     );
   };
 
+  const fetchSegmentAnalytics = async () => {
+    if (rules.length === 0) {
+      setAnalytics(null);
+      return;
+    }
+
+    try {
+      setPreviewLoading(true);
+      const response = await fetch("/api/customers/segments/preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          criteria: {
+            conditions: rules.map(({ field, operator, value }) => ({
+              field,
+              operator,
+              value,
+            })),
+            match_type: matchType,
+          },
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch segment preview");
+      const data = await response.json();
+      setAnalytics(data);
+    } catch (error) {
+      console.error("Error fetching segment preview:", error);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchSegmentAnalytics();
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [rules, matchType]);
+
   const handleSave = async () => {
     try {
       setLoading(true);
-      await onSave(rules);
+      await onSave({
+        conditions: rules.map(({ field, operator, value }) => ({
+          field,
+          operator,
+          value,
+        })),
+        match_type: matchType,
+      });
     } catch (error) {
       console.error("Error saving segment:", error);
     } finally {
@@ -136,7 +229,25 @@ export function SegmentBuilder({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-neutral-400">Match</span>
+          <Select
+            value={matchType}
+            onValueChange={(value: "all" | "any") => setMatchType(value)}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All rules</SelectItem>
+              <SelectItem value="any">Any rule</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="space-y-4">
         {rules.map((rule) => {
           const fieldType = getFieldType(rule.field);
@@ -183,60 +294,26 @@ export function SegmentBuilder({
                   </SelectContent>
                 </Select>
 
-                {rule.operator === "between" ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type={fieldType === "date" ? "date" : "text"}
-                      className="w-[150px]"
-                      placeholder="From"
-                      value={Array.isArray(rule.value) ? rule.value[0] : ""}
-                      onChange={(e) =>
-                        updateRule(rule.id, {
-                          value: [
-                            e.target.value,
-                            Array.isArray(rule.value) ? rule.value[1] : "",
-                          ],
-                        })
-                      }
-                    />
-                    <span className="text-neutral-400">and</span>
-                    <Input
-                      type={fieldType === "date" ? "date" : "text"}
-                      className="w-[150px]"
-                      placeholder="To"
-                      value={Array.isArray(rule.value) ? rule.value[1] : ""}
-                      onChange={(e) =>
-                        updateRule(rule.id, {
-                          value: [
-                            Array.isArray(rule.value) ? rule.value[0] : "",
-                            e.target.value,
-                          ],
-                        })
-                      }
-                    />
-                  </div>
-                ) : (
-                  <Input
-                    type={fieldType === "date" ? "date" : "text"}
-                    className="w-[300px]"
-                    placeholder={`Enter ${
-                      fieldType === "array" ? "comma-separated values" : "value"
-                    }`}
-                    value={
-                      Array.isArray(rule.value)
-                        ? rule.value.join(", ")
-                        : rule.value
-                    }
-                    onChange={(e) =>
-                      updateRule(rule.id, {
-                        value:
-                          fieldType === "array"
-                            ? e.target.value.split(",").map((v) => v.trim())
-                            : e.target.value,
-                      })
-                    }
-                  />
-                )}
+                <Input
+                  type={fieldType === "date" ? "date" : "text"}
+                  className="w-[300px]"
+                  placeholder={`Enter ${
+                    fieldType === "array" ? "comma-separated values" : "value"
+                  }`}
+                  value={
+                    Array.isArray(rule.value)
+                      ? rule.value.join(", ")
+                      : rule.value
+                  }
+                  onChange={(e) =>
+                    updateRule(rule.id, {
+                      value:
+                        fieldType === "array"
+                          ? e.target.value.split(",").map((v) => v.trim())
+                          : e.target.value,
+                    })
+                  }
+                />
 
                 <Button
                   variant="outline"
@@ -263,13 +340,90 @@ export function SegmentBuilder({
         </Button>
       </div>
 
-      {rules.length > 0 && (
-        <Card className="p-4">
-          <h3 className="text-sm font-medium text-white mb-2">Preview Query</h3>
-          <pre className="text-sm text-neutral-400 whitespace-pre-wrap">
-            {JSON.stringify(rules, null, 2)}
-          </pre>
+      {/* Segment Analytics Preview */}
+      {previewLoading ? (
+        <Card className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-900 border-t-transparent" />
+          </div>
         </Card>
+      ) : (
+        analytics && (
+          <Card className="p-6">
+            <h3 className="text-lg font-medium text-white mb-4">
+              Segment Preview
+            </h3>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-neutral-400">Estimated Size</p>
+                <p className="text-2xl font-medium text-white">
+                  {analytics.estimatedSize.toLocaleString()} customers
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-neutral-400">Average Order Value</p>
+                <p className="text-2xl font-medium text-white">
+                  ${analytics.averageOrderValue.toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-neutral-400">Total Revenue</p>
+                <p className="text-2xl font-medium text-white">
+                  ${analytics.totalRevenue.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-neutral-400">Order Frequency</p>
+                <p className="text-2xl font-medium text-white">
+                  {analytics.orderFrequency.toFixed(1)} days
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 mt-6">
+              <div>
+                <h4 className="text-sm font-medium text-white mb-2">
+                  Top Products
+                </h4>
+                <div className="space-y-2">
+                  {analytics.topProducts.map((product) => (
+                    <div
+                      key={product.name}
+                      className="flex items-center justify-between"
+                    >
+                      <span className="text-sm text-neutral-400">
+                        {product.name}
+                      </span>
+                      <span className="text-sm text-white">
+                        {product.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-white mb-2">
+                  Top Categories
+                </h4>
+                <div className="space-y-2">
+                  {analytics.topCategories.map((category) => (
+                    <div
+                      key={category.name}
+                      className="flex items-center justify-between"
+                    >
+                      <span className="text-sm text-neutral-400">
+                        {category.name}
+                      </span>
+                      <span className="text-sm text-white">
+                        {category.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )
       )}
     </div>
   );

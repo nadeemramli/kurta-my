@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import type { Cart } from '@/types/cart';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const body = await request.json();
   const items = body.items;
 
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
   return NextResponse.json(cart);
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   // Mock empty cart response
   const cart: Cart = {
     id: 'mock-cart',

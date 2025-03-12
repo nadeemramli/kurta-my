@@ -2,10 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { AlertCircle, Plus, X, Search, Trash2, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +43,7 @@ interface Collection {
   description: string | null;
   product_count: number;
   created_at: string;
+  thumbnail_url?: string;
 }
 
 interface Product {
@@ -314,18 +330,16 @@ export default function ProductCollectionsPage() {
                         className="p-4 flex items-center justify-between"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-lg bg-neutral-800 overflow-hidden">
-                            {product.media?.[0]?.url ? (
-                              <img
-                                src={product.media[0].url}
-                                alt={product.title}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center bg-neutral-800">
-                                <AlertCircle className="h-6 w-6 text-neutral-500" />
-                              </div>
-                            )}
+                          <div className="relative aspect-square w-24 overflow-hidden rounded-lg">
+                            <Image
+                              src={
+                                product.media?.[0]?.url || "/placeholder.png"
+                              }
+                              alt={product.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 96px) 100vw, 96px"
+                            />
                           </div>
                           <div>
                             <h3 className="font-medium">{product.title}</h3>

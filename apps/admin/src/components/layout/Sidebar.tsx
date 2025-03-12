@@ -12,11 +12,12 @@ import {
   LogOut,
   Menu,
   ChevronRight,
-  BarChart,
   Home,
   PanelLeftClose,
   PanelLeftOpen,
   LineChart,
+  Package,
+  ShoppingCart,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";

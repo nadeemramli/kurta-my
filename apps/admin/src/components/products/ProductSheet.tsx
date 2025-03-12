@@ -6,6 +6,8 @@ import {
   ProductFormData,
   ProductMedia,
   ProductVariant,
+  VariantBracket,
+  ProductStatus,
 } from "@/lib/types/products";
 import {
   Sheet,
@@ -30,6 +32,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Loader2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface ProductSheetProps {
   open: boolean;
@@ -50,17 +53,24 @@ export function ProductSheet({
   const [formData, setFormData] = useState<ProductFormData>({
     title: "",
     description: "",
-    status: "draft",
+    status: "draft" as ProductStatus,
     media: [],
+    price: 0,
+    charge_tax: true,
     track_quantity: true,
     continue_selling_when_out_of_stock: false,
     requires_shipping: true,
-    options: [],
+    variant_brackets: [],
+    collections: [],
     variants: [
       {
-        title: "Default Variant",
+        id: crypto.randomUUID(),
+        sku: "default",
         price: 0,
         inventory_quantity: 0,
+        inventory_policy: "deny",
+        requires_shipping: true,
+        options: {},
       },
     ],
   });
@@ -110,8 +120,8 @@ export function ProductSheet({
   ) => {
     setFormData((prev) => ({
       ...prev,
-      variants: prev.variants.map((variant, i) =>
-        i === index ? { ...variant, ...changes } : variant
+      variants: prev.variants.map((v: ProductVariant, i: number) =>
+        i === index ? { ...v, ...changes } : v
       ),
     }));
   };
@@ -305,8 +315,11 @@ export function ProductSheet({
                       <Label htmlFor="status">Status</Label>
                       <Select
                         value={formData.status}
-                        onValueChange={(value: any) =>
-                          setFormData({ ...formData, status: value })
+                        onValueChange={(value: string) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            status: value as ProductStatus,
+                          }))
                         }
                       >
                         <SelectTrigger>
@@ -374,13 +387,15 @@ export function ProductSheet({
                           key={item.id}
                           className="relative aspect-square rounded-lg border border-neutral-200 overflow-hidden"
                         >
-                          {item.type === "image" && (
-                            <img
+                          <div className="relative aspect-square w-24 overflow-hidden rounded-lg">
+                            <Image
                               src={item.url}
-                              alt={item.alt || "Product image"}
-                              className="object-cover w-full h-full"
+                              alt={`Product media ${item.position + 1}`}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 96px) 100vw, 96px"
                             />
-                          )}
+                          </div>
                           <button
                             type="button"
                             onClick={() =>

@@ -1,127 +1,59 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Metadata } from "next";
 import { OrderDetails } from "@/components/orders/OrderDetails";
-import { CommunicationPreferences } from "@/components/orders/CommunicationPreferences";
-import { Order, OrderStatus, PaymentStatus } from "@/lib/types/orders";
 import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
-export default function OrderPage({ params }: { params: { orderId: string } }) {
-  const router = useRouter();
-  const [order, setOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+interface PageProps {
+  params: Promise<{
+    orderId: string;
+  }>;
+}
 
-  useEffect(() => {
-    fetchOrder();
-  }, [params.orderId]);
+export const metadata: Metadata = {
+  title: "Order Details",
+  description: "View and manage order details",
+};
 
-  async function fetchOrder() {
-    try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select(
-          `
-          *,
-          customer:customers(*),
-          items:order_items(
-            *,
-            product:products(*)
-          )
-        `
-        )
-        .eq("id", params.orderId)
-        .single();
-
-      if (error) throw error;
-      setOrder(data as Order);
-    } catch (error) {
-      console.error("Error fetching order:", error);
-      toast.error("Failed to fetch order details");
-    }
+export default async function OrderDetailsPage({
+  params,
+}: {
+  params: { orderId: string };
+}) {
+  const session = await getSession();
+  if (!session) {
+    redirect("/auth/login?redirect=/admin/orders/" + params.orderId);
   }
 
-  const handleUpdateStatus = async (status: OrderStatus) => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase
-        .from("orders")
-        .update({ status })
-        .eq("id", params.orderId);
+  const { data: order, error } = await supabase
+    .from("orders")
+    .select(
+      `
+      *,
+      customer:customers(*),
+      items:order_items(
+        *,
+        product:products(*)
+      )
+    `
+    )
+    .eq("id", params.orderId)
+    .single();
 
-      if (error) throw error;
-
-      await fetchOrder();
-      toast.success("Order status updated");
-    } catch (error) {
-      console.error("Error updating order status:", error);
-      toast.error("Failed to update order status");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdatePayment = async (payment_status: PaymentStatus) => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase
-        .from("orders")
-        .update({ payment_status })
-        .eq("id", params.orderId);
-
-      if (error) throw error;
-
-      await fetchOrder();
-      toast.success("Payment status updated");
-    } catch (error) {
-      console.error("Error updating payment status:", error);
-      toast.error("Failed to update payment status");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdateCommunication = async (preferences: any) => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase
-        .from("orders")
-        .update({ communication_channels: preferences })
-        .eq("id", params.orderId);
-
-      if (error) throw error;
-
-      await fetchOrder();
-      toast.success("Communication preferences updated");
-    } catch (error) {
-      console.error("Error updating communication preferences:", error);
-      toast.error("Failed to update communication preferences");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (!order) {
-    return <div>Loading...</div>;
+  if (error || !order) {
+    redirect("/admin/orders");
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <OrderDetails
-        order={order}
-        onUpdateStatus={handleUpdateStatus}
-        onUpdatePayment={handleUpdatePayment}
-        isLoading={isLoading}
-      />
+    <main className="container py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Order Details</h1>
+        <p className="mt-2 text-muted-foreground">
+          View and manage order #{order.id.slice(0, 8)}
+        </p>
+      </div>
 
-      <CommunicationPreferences
-        orderId={order.id}
-        initialPreferences={order.communication_channels}
-        hasPhone={!!order.shipping_address.phone}
-        hasEmail={!!order.shipping_address.email}
-        onUpdate={handleUpdateCommunication}
-      />
-    </div>
+      <OrderDetails order={order} isAdmin />
+    </main>
   );
 }

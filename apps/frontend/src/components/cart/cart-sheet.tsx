@@ -19,8 +19,8 @@ function CartItemComponent({ item }: { item: CartItem }) {
     <div className="flex py-4">
       <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800">
         <Image
-          src={item.imageSrc}
-          alt={item.imageAlt}
+          src={item.image}
+          alt={item.name}
           fill
           sizes="(max-width: 640px) 80px, 96px"
           className="object-cover object-center"
@@ -30,12 +30,16 @@ function CartItemComponent({ item }: { item: CartItem }) {
 
       <div className="ml-4 flex flex-1 flex-col">
         <div className="flex justify-between text-base font-medium">
-          <h3 className="pr-2">{item.title}</h3>
+          <h3 className="pr-2">{item.name}</h3>
           <p className="ml-4 whitespace-nowrap">${item.price.toFixed(2)}</p>
         </div>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          {item.color} / {item.size}
-        </p>
+        {item.attributes && (
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            {Object.entries(item.attributes)
+              .map(([_, value]) => `${value}`)
+              .join(" / ")}
+          </p>
+        )}
 
         <div className="mt-auto flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2">
@@ -76,7 +80,8 @@ function CartItemComponent({ item }: { item: CartItem }) {
 }
 
 export function CartSheet() {
-  const { isOpen, setIsOpen, items, subtotal } = useCart();
+  const { state, setIsOpen } = useCart();
+  const { items, total, isOpen } = state;
 
   const handleCheckout = () => {
     if (items.length === 0) {
@@ -114,7 +119,7 @@ export function CartSheet() {
               </p>
             ) : (
               <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                {items.map((item) => (
+                {items.map((item: CartItem) => (
                   <CartItemComponent key={item.id} item={item} />
                 ))}
               </div>
@@ -124,7 +129,7 @@ export function CartSheet() {
           <div className="border-t border-neutral-200 px-6 py-6 dark:border-neutral-800">
             <div className="flex justify-between text-base font-medium">
               <p>Subtotal</p>
-              <p>${subtotal.toFixed(2)}</p>
+              <p>${total.toFixed(2)}</p>
             </div>
             <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
               Shipping and taxes calculated at checkout.

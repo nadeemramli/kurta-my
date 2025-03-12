@@ -1,7 +1,4 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { OrderForm, OrderFormData } from "./OrderForm";
-import { NewOrderWizard } from "./NewOrderWizard";
 import {
   Sheet,
   SheetContent,
@@ -9,8 +6,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { OrderForm, type OrderFormData } from "./OrderForm";
+import { NewOrderWizard, type OrderData } from "./NewOrderWizard";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 interface OrderSheetProps {
   open: boolean;
@@ -18,128 +18,131 @@ interface OrderSheetProps {
   onSuccess?: () => void;
 }
 
-export function OrderSheet({ open, onOpenChange, onSuccess }: OrderSheetProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [orderData, setOrderData] = useState<any>(null);
+type Step = "products" | "customer";
 
-  const handleOrderDetails = async (data: any) => {
+export function OrderSheet({ open, onOpenChange, onSuccess }: OrderSheetProps) {
+  const [step, setStep] = useState<Step>("products");
+  const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleProductStep = async (data: OrderData) => {
     setOrderData(data);
+    setStep("customer");
   };
 
-  const handleSubmit = async (customerData: OrderFormData) => {
-    if (!orderData) return;
-
+  const handleCustomerStep = async (data: OrderFormData) => {
     try {
-      setIsSubmitting(true);
-      setError(null);
+      setLoading(true);
 
-      // First create or get customer
-      const { data: customer, error: customerError } = await supabase
-        .from("customers")
-        .upsert({
-          first_name: customerData.first_name,
-          last_name: customerData.last_name,
-          email: customerData.email,
-          phone: customerData.phone,
-        })
-        .select()
-        .single();
-
-      if (customerError) throw customerError;
-
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          customer_id: customer.id,
-          status: "pending",
-          payment_status: "pending",
-          payment_method: orderData.payment_method,
-          shipping_address: customerData.shipping_address,
-          billing_address: customerData.billing_address,
-          communication_channels: customerData.communication_channels,
-          notes: customerData.notes,
-          delivery_option:
-            orderData.region === "peninsular" ? "standard" : "east_malaysia",
-          total_amount: orderData.total,
-          subtotal_amount: orderData.subtotal,
-          tax_amount: orderData.tax,
-          shipping_amount: orderData.delivery_cost,
-          discount_amount: 0, // Will be handled by promotions system
-          transaction_fee: orderData.transaction_fee,
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Add order items
-      const orderItems = orderData.products.map((product: any) => ({
-        order_id: order.id,
-        product_id: product.id,
-        quantity: product.quantity,
-        unit_price: product.price,
-        total_price: product.price * product.quantity,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      // Update product inventory
-      for (const product of orderData.products) {
-        await supabase.rpc("decrease_inventory", {
-          p_product_id: product.id,
-          p_quantity: product.quantity,
-        });
+      if (!orderData) {
+        throw new Error("No product data found");
       }
 
-      toast.success("Order created successfully");
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_id: null, // Will be created from form data
+          items: orderData.products.map((product) => ({
+            product_id: product.id,
+            quantity: product.quantity,
+            unit_price: product.price,
+            total_price: product.quantity * product.price,
+          })),
+          shipping_address: data.shipping_address,
+          billing_address: data.billing_address,
+          payment_method: orderData.paymentMethod,
+          notes: data.notes,
+          communication_channels: data.communication_channels,
+          customer: {
+            first_name: data.first_name,
+            last_name: data.last_name,
+            email: data.email,
+            phone: data.phone,
+          },
+          calculation: orderData.calculation,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create order");
+      }
+
+      toast({
+        title: "Order created successfully",
+        description: "The order has been created and saved.",
+      });
+
+      // Reset state and close sheet
+      setStep("products");
+      setOrderData(null);
       onOpenChange(false);
-      onSuccess?.();
+      if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Error creating order:", error);
-      setError("Failed to create order. Please try again.");
-      toast.error("Failed to create order");
+      toast({
+        title: "Error creating order",
+        description:
+          error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    setStep("products");
+    setOrderData(null);
+    onOpenChange(false);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full max-w-3xl overflow-y-auto">
-        <SheetHeader className="mb-6">
-          <SheetTitle>Create New Order</SheetTitle>
+        <SheetHeader>
+          <SheetTitle>
+            {step === "products" ? "New Order" : "Customer Information"}
+          </SheetTitle>
           <SheetDescription>
-            Create a new order by following the steps below
+            {step === "products"
+              ? "Select products and configure order details"
+              : "Enter customer and shipping information"}
           </SheetDescription>
         </SheetHeader>
 
-        {error && (
-          <div className="rounded-lg bg-red-500/10 p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-red-400" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-400">Error</h3>
-                <div className="mt-2 text-sm text-red-400">{error}</div>
+        <div className="mt-8">
+          {step === "products" ? (
+            <NewOrderWizard
+              onComplete={handleProductStep}
+              onCancel={handleClose}
+            />
+          ) : (
+            <div className="space-y-6">
+              <OrderForm onSubmit={handleCustomerStep} isLoading={loading} />
+              <div className="flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep("products")}
+                  disabled={loading}
+                >
+                  Back to Products
+                </Button>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {!orderData ? (
-          <NewOrderWizard
-            onComplete={handleOrderDetails}
-            onCancel={() => onOpenChange(false)}
-          />
-        ) : (
-          <OrderForm onSubmit={handleSubmit} isLoading={isSubmitting} />
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <div className="rounded-lg bg-white p-4">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          </div>
         )}
       </SheetContent>
     </Sheet>

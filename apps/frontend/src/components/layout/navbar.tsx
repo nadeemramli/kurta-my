@@ -20,8 +20,9 @@ import { cn } from "@kurta-my/utils";
 import { usePathname } from "next/navigation";
 
 export function Navbar() {
-  const { totalQuantity, setIsOpen: setCartOpen } = useCart();
-  const { user, logout } = useAuth();
+  const { state, setIsOpen: setCartOpen } = useCart();
+  const { itemCount } = state;
+  const { user, signOut } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const pathname = usePathname();
@@ -101,9 +102,9 @@ export function Navbar() {
                   aria-label="Open cart"
                 >
                   <ShoppingBag className="h-5 w-5" />
-                  {totalQuantity > 0 && (
+                  {itemCount > 0 && (
                     <div className="absolute right-0 top-0 -mr-0.5 -mt-0.5 h-3.5 w-3.5 rounded-full bg-white text-[10px] font-medium text-black flex items-center justify-center">
-                      {totalQuantity}
+                      {itemCount}
                     </div>
                   )}
                 </Button>
@@ -131,7 +132,7 @@ export function Navbar() {
                         <Link href="/orders">Orders</Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={logout}>
+                      <DropdownMenuItem onClick={signOut}>
                         Sign Out
                       </DropdownMenuItem>
                     </DropdownMenuContent>

@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
@@ -6,9 +9,24 @@ import { MarqueeBanner } from "@/components/ui/marquee-banner";
 import { ShoppingBag, Star, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
 import { ProductCarousel } from "@/components/ui/product-carousel";
-import { ProductCard } from "@/components/ui/product-card";
+import { ProductCard } from "@/components/product/product-card";
+import { getProducts } from "@/lib/services/product";
+import type { Product } from "@/types";
 
 export default function HomePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProducts() {
+      const data = await getProducts({ limit: 8 });
+      setProducts(data);
+      setLoading(false);
+    }
+
+    loadProducts();
+  }, []);
+
   return (
     <>
       {/* Hero Section */}
@@ -144,40 +162,24 @@ export default function HomePage() {
             </p>
             <div className="px-4">
               <ProductCarousel>
-                {[
-                  {
-                    title: "Classic Kurta - Black",
-                    price: "RM 150.00 MYR",
-                    image: "/images/products/kurta-1.jpg",
-                    colors: ["black", "white", "gray"],
-                  },
-                  {
-                    title: "Classic Kurta - White",
-                    price: "RM 150.00 MYR",
-                    image: "/images/products/kurta-2.jpg",
-                    colors: ["white", "black", "gray"],
-                  },
-                  {
-                    title: "Classic Kurta - Gray",
-                    price: "RM 150.00 MYR",
-                    image: "/images/products/kurta-3.jpg",
-                    colors: ["gray", "black", "white"],
-                    soldOut: true,
-                  },
-                  {
-                    title: "Classic Kurta - Navy",
-                    price: "RM 150.00 MYR",
-                    image: "/images/products/kurta-4.jpg",
-                    colors: ["black", "white"],
-                  },
-                ].map((product, i) => (
-                  <div
-                    key={i}
-                    className="flex-[0_0_90%] min-w-0 pl-4 pr-12 first:pl-0 last:pr-4"
-                  >
-                    <ProductCard {...product} className="bg-black" />
-                  </div>
-                ))}
+                {loading
+                  ? // Loading skeletons
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex-[0_0_90%] min-w-0 pl-4 pr-12 first:pl-0 last:pr-4"
+                      >
+                        <div className="aspect-[3/4] bg-neutral-800 rounded-lg animate-pulse" />
+                      </div>
+                    ))
+                  : products.map((product) => (
+                      <div
+                        key={product.id}
+                        className="flex-[0_0_90%] min-w-0 pl-4 pr-12 first:pl-0 last:pr-4"
+                      >
+                        <ProductCard product={product} />
+                      </div>
+                    ))}
               </ProductCarousel>
             </div>
             <div className="flex justify-center mt-12">

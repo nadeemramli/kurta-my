@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import "./globals.css";
 import { baseUrl } from "@kurta-my/utils";
 import { ClientComponents } from "./client-components";
+import { Toaster } from "@/components/ui/toaster";
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "Kurta MY";
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ClientComponents>
           <main>{children}</main>
         </ClientComponents>
+        <Toaster />
       </body>
     </html>
   );

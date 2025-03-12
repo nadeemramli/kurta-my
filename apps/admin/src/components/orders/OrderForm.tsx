@@ -15,60 +15,37 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { malaysianStates } from "@/lib/constants";
 
-interface OrderFormProps {
-  onSubmit: (data: OrderFormData) => void;
-  initialData?: Partial<OrderFormData>;
-  isLoading?: boolean;
+interface Address {
+  name: string;
+  email: string;
+  phone: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
 }
 
 export interface OrderFormData {
-  // Customer Info
   first_name: string;
   last_name: string;
   email: string;
   phone: string;
-
-  // Billing Address
-  billing_address: {
-    first_name: string;
-    last_name: string;
-    country: string;
-    address_line1: string;
-    city: string;
-    state: string;
-    postal_code: string;
-    phone: string;
-    email: string;
-  };
-
-  // Shipping Address
-  shipping_address: {
-    first_name: string;
-    last_name: string;
-    country: string;
-    address_line1: string;
-    city: string;
-    state: string;
-    postal_code: string;
-    phone: string;
-    email: string;
-  };
-
-  // Communication Preferences
+  shipping_address: Address;
+  billing_address: Address;
   communication_channels: {
     whatsapp: boolean;
     email: boolean;
     sms: boolean;
   };
-
-  // Order Notes
   notes?: string;
+}
 
-  // Payment Method
-  payment_method: "fpx" | "card" | "cod";
-
-  // Delivery Option (you can expand this based on your needs)
-  delivery_option: string;
+interface OrderFormProps {
+  onSubmit: (data: OrderFormData) => void;
+  initialData?: Partial<OrderFormData>;
+  isLoading?: boolean;
 }
 
 export function OrderForm({
@@ -76,74 +53,71 @@ export function OrderForm({
   initialData,
   isLoading,
 }: OrderFormProps) {
-  const [formData, setFormData] = useState<OrderFormData>(() => ({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    billing_address: {
-      first_name: "",
-      last_name: "",
-      country: "Malaysia",
+  const [formData, setFormData] = useState<OrderFormData>({
+    first_name: initialData?.first_name || "",
+    last_name: initialData?.last_name || "",
+    email: initialData?.email || "",
+    phone: initialData?.phone || "",
+    shipping_address: initialData?.shipping_address || {
+      name: "",
+      email: "",
+      phone: "",
       address_line1: "",
       city: "",
       state: "",
       postal_code: "",
-      phone: "",
-      email: "",
-    },
-    shipping_address: {
-      first_name: "",
-      last_name: "",
       country: "Malaysia",
+    },
+    billing_address: initialData?.billing_address || {
+      name: "",
+      email: "",
+      phone: "",
       address_line1: "",
       city: "",
       state: "",
       postal_code: "",
-      phone: "",
-      email: "",
+      country: "Malaysia",
     },
-    communication_channels: {
+    communication_channels: initialData?.communication_channels || {
       whatsapp: true,
-      email: false,
+      email: true,
       sms: false,
     },
-    notes: "",
-    payment_method: "fpx",
-    delivery_option: "standard",
-    ...initialData,
-  }));
+    notes: initialData?.notes || "",
+  });
 
-  const [sameAsShipping, setSameAsShipping] = useState(true);
+  const [sameAsBilling, setSameAsBilling] = useState(true);
 
   const handleInputChange = (
-    field: string,
-    value: string | boolean,
-    addressType?: "billing" | "shipping"
+    field: keyof OrderFormData,
+    value: string | boolean | object
   ) => {
-    if (addressType) {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleAddressChange = (
+    type: "shipping" | "billing",
+    field: keyof Address,
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [`${type}_address`]: {
+        ...prev[`${type}_address`],
+        [field]: value,
+      },
+    }));
+
+    if (type === "shipping" && sameAsBilling) {
       setFormData((prev) => ({
         ...prev,
-        [`${addressType}_address`]: {
-          ...prev[`${addressType}_address`],
+        billing_address: {
+          ...prev.billing_address,
           [field]: value,
         },
-      }));
-
-      // If billing is same as shipping, update billing too
-      if (sameAsShipping && addressType === "shipping") {
-        setFormData((prev) => ({
-          ...prev,
-          billing_address: {
-            ...prev.billing_address,
-            [field]: value,
-          },
-        }));
-      }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: value,
       }));
     }
   };
@@ -154,12 +128,12 @@ export function OrderForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* Customer Information */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
             <Label htmlFor="first_name">First Name</Label>
             <Input
               id="first_name"
@@ -168,7 +142,7 @@ export function OrderForm({
               required
             />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="last_name">Last Name</Label>
             <Input
               id="last_name"
@@ -177,7 +151,7 @@ export function OrderForm({
               required
             />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -187,10 +161,11 @@ export function OrderForm({
               required
             />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="phone">Phone</Label>
             <Input
               id="phone"
+              type="tel"
               value={formData.phone}
               onChange={(e) => handleInputChange("phone", e.target.value)}
               required
@@ -199,208 +174,324 @@ export function OrderForm({
         </div>
       </Card>
 
-      {/* Shipping Address */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Shipping Address</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="shipping_first_name">First Name</Label>
-            <Input
-              id="shipping_first_name"
-              value={formData.shipping_address.first_name}
-              onChange={(e) =>
-                handleInputChange("first_name", e.target.value, "shipping")
-              }
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="shipping_last_name">Last Name</Label>
-            <Input
-              id="shipping_last_name"
-              value={formData.shipping_address.last_name}
-              onChange={(e) =>
-                handleInputChange("last_name", e.target.value, "shipping")
-              }
-              required
-            />
-          </div>
-          <div className="col-span-2">
-            <Label htmlFor="shipping_address">Street Address</Label>
-            <Input
-              id="shipping_address"
-              value={formData.shipping_address.address_line1}
-              onChange={(e) =>
-                handleInputChange("address_line1", e.target.value, "shipping")
-              }
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="shipping_city">Town / City</Label>
-            <Input
-              id="shipping_city"
-              value={formData.shipping_address.city}
-              onChange={(e) =>
-                handleInputChange("city", e.target.value, "shipping")
-              }
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="shipping_state">State</Label>
-            <Select
-              value={formData.shipping_address.state}
-              onValueChange={(value) =>
-                handleInputChange("state", value, "shipping")
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select state" />
-              </SelectTrigger>
-              <SelectContent>
-                {malaysianStates.map((state) => (
-                  <SelectItem key={state} value={state}>
-                    {state}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="shipping_postal_code">Postcode / ZIP</Label>
-            <Input
-              id="shipping_postal_code"
-              value={formData.shipping_address.postal_code}
-              onChange={(e) =>
-                handleInputChange("postal_code", e.target.value, "shipping")
-              }
-              required
-            />
-          </div>
-        </div>
-      </Card>
-
-      {/* Billing Address */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Checkbox
-            id="same_as_shipping"
-            checked={sameAsShipping}
-            onCheckedChange={(checked: boolean) => setSameAsShipping(checked)}
-          />
-          <Label htmlFor="same_as_shipping">
-            Billing address same as shipping
-          </Label>
-        </div>
-
-        {!sameAsShipping && (
-          <div className="grid grid-cols-2 gap-4">
-            {/* Billing address fields (similar to shipping) */}
-            {/* ... */}
-          </div>
-        )}
-      </Card>
-
       {/* Communication Preferences */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">
           Communication Preferences
         </h3>
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center space-x-2">
             <Checkbox
               id="whatsapp"
               checked={formData.communication_channels.whatsapp}
-              onCheckedChange={(checked: boolean) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  communication_channels: {
-                    ...prev.communication_channels,
-                    whatsapp: checked,
-                  },
-                }))
+              onCheckedChange={(checked) =>
+                handleInputChange("communication_channels", {
+                  ...formData.communication_channels,
+                  whatsapp: checked,
+                })
               }
             />
-            <Label htmlFor="whatsapp">WhatsApp</Label>
+            <Label htmlFor="whatsapp">WhatsApp notifications</Label>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center space-x-2">
             <Checkbox
-              id="email_comm"
+              id="email_notifications"
               checked={formData.communication_channels.email}
-              onCheckedChange={(checked: boolean) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  communication_channels: {
-                    ...prev.communication_channels,
-                    email: checked,
-                  },
-                }))
+              onCheckedChange={(checked) =>
+                handleInputChange("communication_channels", {
+                  ...formData.communication_channels,
+                  email: checked,
+                })
               }
             />
-            <Label htmlFor="email_comm">Email</Label>
+            <Label htmlFor="email_notifications">Email notifications</Label>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center space-x-2">
             <Checkbox
               id="sms"
               checked={formData.communication_channels.sms}
-              onCheckedChange={(checked: boolean) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  communication_channels: {
-                    ...prev.communication_channels,
-                    sms: checked,
-                  },
-                }))
+              onCheckedChange={(checked) =>
+                handleInputChange("communication_channels", {
+                  ...formData.communication_channels,
+                  sms: checked,
+                })
               }
             />
-            <Label htmlFor="sms">SMS</Label>
+            <Label htmlFor="sms">SMS notifications</Label>
           </div>
         </div>
       </Card>
 
-      {/* Payment Method */}
+      {/* Shipping Address */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Payment Method</h3>
-        <RadioGroup
-          value={formData.payment_method}
-          onValueChange={(value: "fpx" | "card" | "cod") =>
-            handleInputChange("payment_method", value)
-          }
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="fpx" id="fpx" />
-            <Label htmlFor="fpx">Online Banking (FPX)</Label>
+        <h3 className="text-lg font-semibold mb-4">Shipping Address</h3>
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="shipping_name">Full Name</Label>
+              <Input
+                id="shipping_name"
+                value={formData.shipping_address.name}
+                onChange={(e) =>
+                  handleAddressChange("shipping", "name", e.target.value)
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shipping_phone">Phone</Label>
+              <Input
+                id="shipping_phone"
+                value={formData.shipping_address.phone}
+                onChange={(e) =>
+                  handleAddressChange("shipping", "phone", e.target.value)
+                }
+                required
+              />
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="card" id="card" />
-            <Label htmlFor="card">Credit/Debit Card</Label>
+          <div className="space-y-2">
+            <Label htmlFor="shipping_email">Email</Label>
+            <Input
+              id="shipping_email"
+              type="email"
+              value={formData.shipping_address.email}
+              onChange={(e) =>
+                handleAddressChange("shipping", "email", e.target.value)
+              }
+              required
+            />
           </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="cod" id="cod" />
-            <Label htmlFor="cod">Cash on Delivery (COD)</Label>
+          <div className="space-y-2">
+            <Label htmlFor="shipping_address1">Address Line 1</Label>
+            <Input
+              id="shipping_address1"
+              value={formData.shipping_address.address_line1}
+              onChange={(e) =>
+                handleAddressChange("shipping", "address_line1", e.target.value)
+              }
+              required
+            />
           </div>
-        </RadioGroup>
+          <div className="space-y-2">
+            <Label htmlFor="shipping_address2">Address Line 2 (Optional)</Label>
+            <Input
+              id="shipping_address2"
+              value={formData.shipping_address.address_line2}
+              onChange={(e) =>
+                handleAddressChange("shipping", "address_line2", e.target.value)
+              }
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="shipping_city">City</Label>
+              <Input
+                id="shipping_city"
+                value={formData.shipping_address.city}
+                onChange={(e) =>
+                  handleAddressChange("shipping", "city", e.target.value)
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shipping_state">State</Label>
+              <Select
+                value={formData.shipping_address.state}
+                onValueChange={(value) =>
+                  handleAddressChange("shipping", "state", value)
+                }
+              >
+                <SelectTrigger id="shipping_state">
+                  <SelectValue placeholder="Select state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {malaysianStates.map((state) => (
+                    <SelectItem key={state} value={state}>
+                      {state}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shipping_postal">Postal Code</Label>
+              <Input
+                id="shipping_postal"
+                value={formData.shipping_address.postal_code}
+                onChange={(e) =>
+                  handleAddressChange("shipping", "postal_code", e.target.value)
+                }
+                required
+              />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Billing Address */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Billing Address</h3>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="same_as_shipping"
+              checked={sameAsBilling}
+              onCheckedChange={(checked) => {
+                setSameAsBilling(!!checked);
+                if (checked) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    billing_address: prev.shipping_address,
+                  }));
+                }
+              }}
+            />
+            <Label htmlFor="same_as_shipping">Same as shipping</Label>
+          </div>
+        </div>
+
+        {!sameAsBilling && (
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="billing_name">Full Name</Label>
+                <Input
+                  id="billing_name"
+                  value={formData.billing_address.name}
+                  onChange={(e) =>
+                    handleAddressChange("billing", "name", e.target.value)
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="billing_phone">Phone</Label>
+                <Input
+                  id="billing_phone"
+                  value={formData.billing_address.phone}
+                  onChange={(e) =>
+                    handleAddressChange("billing", "phone", e.target.value)
+                  }
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="billing_email">Email</Label>
+              <Input
+                id="billing_email"
+                type="email"
+                value={formData.billing_address.email}
+                onChange={(e) =>
+                  handleAddressChange("billing", "email", e.target.value)
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="billing_address1">Address Line 1</Label>
+              <Input
+                id="billing_address1"
+                value={formData.billing_address.address_line1}
+                onChange={(e) =>
+                  handleAddressChange(
+                    "billing",
+                    "address_line1",
+                    e.target.value
+                  )
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="billing_address2">
+                Address Line 2 (Optional)
+              </Label>
+              <Input
+                id="billing_address2"
+                value={formData.billing_address.address_line2}
+                onChange={(e) =>
+                  handleAddressChange(
+                    "billing",
+                    "address_line2",
+                    e.target.value
+                  )
+                }
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="billing_city">City</Label>
+                <Input
+                  id="billing_city"
+                  value={formData.billing_address.city}
+                  onChange={(e) =>
+                    handleAddressChange("billing", "city", e.target.value)
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="billing_state">State</Label>
+                <Select
+                  value={formData.billing_address.state}
+                  onValueChange={(value) =>
+                    handleAddressChange("billing", "state", value)
+                  }
+                >
+                  <SelectTrigger id="billing_state">
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {malaysianStates.map((state) => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="billing_postal">Postal Code</Label>
+                <Input
+                  id="billing_postal"
+                  value={formData.billing_address.postal_code}
+                  onChange={(e) =>
+                    handleAddressChange(
+                      "billing",
+                      "postal_code",
+                      e.target.value
+                    )
+                  }
+                  required
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Order Notes */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Additional Information</h3>
-        <div>
-          <Label htmlFor="notes">Order Notes (optional)</Label>
+        <h3 className="text-lg font-semibold mb-4">Order Notes</h3>
+        <div className="space-y-2">
+          <Label htmlFor="notes">Additional Notes (Optional)</Label>
           <Textarea
             id="notes"
             value={formData.notes}
             onChange={(e) => handleInputChange("notes", e.target.value)}
-            placeholder="Notes about your order, e.g. special notes for delivery"
-            className="h-24"
+            placeholder="Add any special instructions or notes for this order"
+            className="h-32"
           />
         </div>
       </Card>
 
+      {/* Submit Button */}
       <div className="flex justify-end">
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Processing..." : "Place Order"}
+          {isLoading ? "Creating Order..." : "Create Order"}
         </Button>
       </div>
     </form>

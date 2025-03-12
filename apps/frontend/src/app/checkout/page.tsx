@@ -1,311 +1,446 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { useCart } from "@/components/cart/cart-context";
-import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCart } from "@/components/cart/cart-context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { formatPrice } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import Image from "next/image";
 
 interface CheckoutFormData {
+  first_name: string;
+  last_name: string;
   email: string;
-  shipping: {
-    firstName: string;
-    lastName: string;
-    address: string;
-    apartment: string;
+  phone: string;
+  shipping_address: {
+    address_line1: string;
+    address_line2?: string;
     city: string;
     state: string;
-    postalCode: string;
-    country: string;
-    phone: string;
-  };
-  billing: {
-    sameAsShipping: boolean;
-    firstName: string;
-    lastName: string;
-    address: string;
-    apartment: string;
-    city: string;
-    state: string;
-    postalCode: string;
+    postal_code: string;
     country: string;
   };
-  payment: {
-    cardNumber: string;
-    cardName: string;
-    expiryDate: string;
-    cvv: string;
-  };
+  payment_method: "cod" | "online";
+  notes?: string;
 }
 
+const initialFormData: CheckoutFormData = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  phone: "",
+  shipping_address: {
+    address_line1: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    country: "MY",
+  },
+  payment_method: "cod",
+};
+
 export default function CheckoutPage() {
-  const { items, subtotal } = useCart();
-  const [formData, setFormData] = useState<CheckoutFormData>({
-    email: "",
-    shipping: {
-      firstName: "",
-      lastName: "",
-      address: "",
-      apartment: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      country: "",
-      phone: "",
-    },
-    billing: {
-      sameAsShipping: true,
-      firstName: "",
-      lastName: "",
-      address: "",
-      apartment: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      country: "",
-    },
-    payment: {
-      cardNumber: "",
-      cardName: "",
-      expiryDate: "",
-      cvv: "",
-    },
-  });
+  const router = useRouter();
+  const { state, clearCart } = useCart();
+  const [formData, setFormData] = useState<CheckoutFormData>(initialFormData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const shipping = 10;
-  const tax = subtotal * 0.06; // 6% tax
-  const total = subtotal + shipping + tax;
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // TODO: Implement checkout logic
-    console.log("Checkout data:", formData);
-  };
-
-  if (items.length === 0) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4">
-        <div className="relative h-24 w-24 text-neutral-500 dark:text-neutral-400">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1}
-              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-            />
-          </svg>
-        </div>
-        <p className="text-neutral-500 dark:text-neutral-400">
-          Your cart is empty
-        </p>
-        <Button asChild variant="outline">
-          <Link href="/products">Continue Shopping</Link>
-        </Button>
-      </div>
-    );
+  if (state.items.length === 0) {
+    router.push("/products");
+    return null;
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Create or get customer
+      const { data: customer, error: customerError } = await supabase
+        .from("customers")
+        .upsert({
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          email: formData.email,
+          phone: formData.phone,
+        })
+        .select()
+        .single();
+
+      if (customerError) throw customerError;
+
+      // Create order
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          customer_id: customer.id,
+          status: "pending",
+          payment_status: "pending",
+          payment_method: formData.payment_method,
+          shipping_address: {
+            ...formData.shipping_address,
+            email: formData.email,
+            phone: formData.phone,
+            name: `${formData.first_name} ${formData.last_name}`,
+          },
+          billing_address: {
+            ...formData.shipping_address,
+            email: formData.email,
+            phone: formData.phone,
+            name: `${formData.first_name} ${formData.last_name}`,
+          },
+          notes: formData.notes,
+          total_amount: state.total,
+          subtotal_amount: state.total,
+          tax_amount: 0, // Will be calculated by backend
+          shipping_amount: 0, // Will be calculated by backend
+          discount_amount: 0,
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Add order items
+      const orderItems = state.items.map((item) => ({
+        order_id: order.id,
+        product_id: item.productId,
+        variant_id: item.variantId,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: item.quantity * item.price,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // Clear cart and redirect to success page
+      clearCart();
+      window.location.href = "/checkout/success";
+    } catch (err) {
+      console.error("Error creating order:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to create order. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* Checkout Form */}
-        <div>
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Contact Information */}
+    <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 lg:px-8">
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      <div className="mx-auto max-w-2xl lg:max-w-none">
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
+          Checkout
+        </h1>
+
+        <form
+          onSubmit={handleSubmit}
+          className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16"
+        >
+          <div>
             <div>
-              <h2 className="text-lg font-medium">Contact Information</h2>
+              <h2 className="text-lg font-medium text-neutral-900 mt-8">
+                Contact information
+              </h2>
+
+              <div className="mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
+                <div>
+                  <Label htmlFor="first_name">First name</Label>
+                  <Input
+                    type="text"
+                    id="first_name"
+                    required
+                    value={formData.first_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, first_name: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="last_name">Last name</Label>
+                  <Input
+                    type="text"
+                    id="last_name"
+                    required
+                    value={formData.last_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, last_name: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    type="email"
+                    id="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    type="tel"
+                    id="phone"
+                    required
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-10">
+              <h2 className="text-lg font-medium text-neutral-900">
+                Shipping address
+              </h2>
+
+              <div className="mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
+                <div className="sm:col-span-2">
+                  <Label htmlFor="address_line1">Address</Label>
+                  <Input
+                    type="text"
+                    id="address_line1"
+                    required
+                    value={formData.shipping_address.address_line1}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        shipping_address: {
+                          ...formData.shipping_address,
+                          address_line1: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Label htmlFor="address_line2">
+                    Apartment, suite, etc. (optional)
+                  </Label>
+                  <Input
+                    type="text"
+                    id="address_line2"
+                    value={formData.shipping_address.address_line2}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        shipping_address: {
+                          ...formData.shipping_address,
+                          address_line2: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    type="text"
+                    id="city"
+                    required
+                    value={formData.shipping_address.city}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        shipping_address: {
+                          ...formData.shipping_address,
+                          city: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    type="text"
+                    id="state"
+                    required
+                    value={formData.shipping_address.state}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        shipping_address: {
+                          ...formData.shipping_address,
+                          state: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="postal_code">Postal code</Label>
+                  <Input
+                    type="text"
+                    id="postal_code"
+                    required
+                    value={formData.shipping_address.postal_code}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        shipping_address: {
+                          ...formData.shipping_address,
+                          postal_code: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-10">
+              <h2 className="text-lg font-medium text-neutral-900">
+                Payment method
+              </h2>
+
+              <RadioGroup
+                value={formData.payment_method}
+                onValueChange={(value: "cod" | "online") =>
+                  setFormData({ ...formData, payment_method: value })
+                }
+                className="mt-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="cod" id="cod" />
+                  <Label htmlFor="cod">Cash on Delivery</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="online" id="online" />
+                  <Label htmlFor="online">Online Payment</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <div className="mt-10">
+              <h2 className="text-lg font-medium text-neutral-900">
+                Additional notes
+              </h2>
+
               <div className="mt-4">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-neutral-700 dark:text-neutral-300"
-                >
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 placeholder-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
-                  placeholder="your@email.com"
-                  value={formData.email}
+                <textarea
+                  rows={4}
+                  id="notes"
+                  className="block w-full rounded-md border-neutral-300 shadow-sm focus:border-neutral-500 focus:ring-neutral-500 sm:text-sm"
+                  value={formData.notes}
                   onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
+                    setFormData({ ...formData, notes: e.target.value })
                   }
                 />
-              </div>
-            </div>
-
-            {/* Shipping Information */}
-            <div>
-              <h2 className="text-lg font-medium">Shipping Information</h2>
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="shipping.firstName"
-                    className="block text-sm font-medium text-neutral-700 dark:text-neutral-300"
-                  >
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    id="shipping.firstName"
-                    name="shipping.firstName"
-                    required
-                    className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 placeholder-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
-                    value={formData.shipping.firstName}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        shipping: {
-                          ...formData.shipping,
-                          firstName: e.target.value,
-                        },
-                      })
-                    }
-                  />
-                </div>
-                {/* Add more shipping fields similarly */}
-              </div>
-            </div>
-
-            {/* Billing Information */}
-            <div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="sameAsShipping"
-                  name="sameAsShipping"
-                  checked={formData.billing.sameAsShipping}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      billing: {
-                        ...formData.billing,
-                        sameAsShipping: e.target.checked,
-                      },
-                    })
-                  }
-                  className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 dark:border-neutral-700"
-                />
-                <label
-                  htmlFor="sameAsShipping"
-                  className="text-sm font-medium text-neutral-700 dark:text-neutral-300"
-                >
-                  Billing address same as shipping
-                </label>
-              </div>
-              {!formData.billing.sameAsShipping && (
-                <div className="mt-4">
-                  <h2 className="text-lg font-medium">Billing Information</h2>
-                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {/* Add billing fields */}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Payment Information */}
-            <div>
-              <h2 className="text-lg font-medium">Payment Information</h2>
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label
-                    htmlFor="payment.cardNumber"
-                    className="block text-sm font-medium text-neutral-700 dark:text-neutral-300"
-                  >
-                    Card Number
-                  </label>
-                  <input
-                    type="text"
-                    id="payment.cardNumber"
-                    name="payment.cardNumber"
-                    required
-                    className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 placeholder-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
-                    placeholder="1234 5678 9012 3456"
-                    value={formData.payment.cardNumber}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        payment: {
-                          ...formData.payment,
-                          cardNumber: e.target.value,
-                        },
-                      })
-                    }
-                  />
-                </div>
-                {/* Add more payment fields */}
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full">
-              Place Order
-            </Button>
-          </form>
-        </div>
-
-        {/* Order Summary */}
-        <div className="lg:pl-8">
-          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-6 dark:border-neutral-800 dark:bg-neutral-900">
-            <h2 className="text-lg font-medium">Order Summary</h2>
-            <div className="mt-6 space-y-4 divide-y divide-neutral-200 dark:divide-neutral-800">
-              {items.map((item) => (
-                <div key={item.id} className="flex py-4">
-                  <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
-                    <Image
-                      src={item.imageSrc}
-                      alt={item.imageAlt}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="ml-4 flex flex-1 flex-col justify-between">
-                    <div className="flex justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                          {item.title}
-                        </h3>
-                        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                          {item.color} / {item.size}
-                        </p>
-                      </div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                        ${item.price.toFixed(2)}
-                      </p>
-                    </div>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                      Qty {item.quantity}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 space-y-2">
-              <div className="flex justify-between text-sm">
-                <p>Subtotal</p>
-                <p>${subtotal.toFixed(2)}</p>
-              </div>
-              <div className="flex justify-between text-sm">
-                <p>Shipping</p>
-                <p>${shipping.toFixed(2)}</p>
-              </div>
-              <div className="flex justify-between text-sm">
-                <p>Tax</p>
-                <p>${tax.toFixed(2)}</p>
-              </div>
-              <div className="flex justify-between border-t border-neutral-200 pt-2 text-base font-medium dark:border-neutral-800">
-                <p>Total</p>
-                <p>${total.toFixed(2)}</p>
               </div>
             </div>
           </div>
-        </div>
+
+          {/* Order summary */}
+          <div className="mt-10 lg:mt-0">
+            <h2 className="text-lg font-medium text-neutral-900">
+              Order summary
+            </h2>
+
+            <div className="mt-4 rounded-lg border border-neutral-200 bg-white shadow-sm">
+              <ul className="divide-y divide-neutral-200">
+                {state.items.map((item) => (
+                  <li key={item.id} className="flex py-6 px-4 sm:px-6">
+                    <div className="flex-shrink-0">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        width={100}
+                        height={100}
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="ml-6 flex flex-1 flex-col">
+                      <div className="flex">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm">
+                            <a
+                              href={`/products/${item.productId}`}
+                              className="font-medium text-neutral-700 hover:text-neutral-800"
+                            >
+                              {item.name}
+                            </a>
+                          </h4>
+                        </div>
+                      </div>
+                      <div className="flex flex-1 items-end justify-between">
+                        <p className="text-sm text-neutral-500">
+                          Qty {item.quantity}
+                        </p>
+                        <p className="text-sm font-medium text-neutral-900">
+                          {formatPrice(item.price * item.quantity)}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <dl className="space-y-6 border-t border-neutral-200 px-4 py-6 sm:px-6">
+                <div className="flex items-center justify-between">
+                  <dt className="text-sm">Subtotal</dt>
+                  <dd className="text-sm font-medium text-neutral-900">
+                    {formatPrice(state.total)}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-sm">Shipping</dt>
+                  <dd className="text-sm font-medium text-neutral-900">
+                    Calculated at next step
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-sm">Taxes</dt>
+                  <dd className="text-sm font-medium text-neutral-900">
+                    Calculated at next step
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between border-t border-neutral-200 pt-6">
+                  <dt className="text-base font-medium">Total</dt>
+                  <dd className="text-base font-medium text-neutral-900">
+                    {formatPrice(state.total)}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="border-t border-neutral-200 px-4 py-6 sm:px-6">
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Processing..." : "Confirm order"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

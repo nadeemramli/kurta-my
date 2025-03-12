@@ -2,6 +2,7 @@ import { AdminAuthProvider } from "@/components/auth/auth-context";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
 
 export const metadata = {
   title: "Admin Dashboard - Kurta MY",
@@ -19,7 +20,10 @@ export default function RootLayout({
         className={`${GeistSans.variable} ${GeistMono.variable} font-sans`}
         suppressHydrationWarning
       >
-        <AdminAuthProvider>{children}</AdminAuthProvider>
+        <AdminAuthProvider>
+          {children}
+          <Toaster />
+        </AdminAuthProvider>
       </body>
     </html>
   );

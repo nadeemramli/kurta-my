@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,10 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { AlertCircle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { useDebounce } from "@/lib/hooks/useDebounce";
+import { Search, Plus, Minus, Loader2 } from "lucide-react";
 
 interface Product {
   id: string;
@@ -30,314 +30,314 @@ interface OrderCalculation {
   total: number;
 }
 
+export interface OrderData {
+  products: {
+    id: string;
+    quantity: number;
+    price: number;
+    title: string;
+  }[];
+  promoCode?: string;
+  paymentMethod: "cod" | "online";
+  region: "peninsular" | "eastMalaysia";
+  calculation: OrderCalculation;
+}
+
 interface NewOrderWizardProps {
-  onComplete: (orderData: any) => void;
+  onComplete: (orderData: OrderData) => void;
   onCancel: () => void;
 }
 
-const TRANSACTION_FEE = 1; // RM1
-const TAX_RATE = 0.06; // 6%
-
-const DELIVERY_COSTS = {
-  cod: {
-    peninsular: 10,
-    eastMalaysia: 15,
-  },
-  postage: {
-    peninsular: 8,
-    eastMalaysia: 15,
-  },
-};
-
 export function NewOrderWizard({ onComplete, onCancel }: NewOrderWizardProps) {
-  const [step, setStep] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-
-  // Form state
   const [selectedProducts, setSelectedProducts] = useState<
-    {
-      id: string;
-      quantity: number;
-      price: number;
-    }[]
+    { product: Product; quantity: number }[]
   >([]);
-  const [promoCode, setPromoCode] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">(
-    "online"
-  );
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [region, setRegion] = useState<"peninsular" | "eastMalaysia">(
     "peninsular"
   );
-  const [calculation, setCalculation] = useState<OrderCalculation>({
-    subtotal: 0,
-    tax: 0,
-    transaction_fee: TRANSACTION_FEE,
-    delivery_cost: 0,
-    total: 0,
-  });
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
-  // Fetch products on mount
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  // Constants for calculations
+  const TAX_RATE = 0.06; // 6% SST
+  const TRANSACTION_FEE_RATE = 0.02; // 2% for online payments
+  const DELIVERY_RATES = {
+    peninsular: {
+      base: 10,
+      additional: 5,
+    },
+    eastMalaysia: {
+      base: 15,
+      additional: 8,
+    },
+  };
 
-  // Recalculate totals when relevant values change
-  useEffect(() => {
-    calculateTotals();
-  }, [selectedProducts, paymentMethod, region]);
-
-  async function fetchProducts() {
+  // Search products
+  const searchProducts = async (query: string) => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from("products")
-        .select("*")
-        .eq("status", "active")
-        .gt("inventory_quantity", 0);
+        .select("id, title, price, sku, inventory_quantity")
+        .ilike("title", `%${query}%`)
+        .limit(10);
 
       if (error) throw error;
-
       setProducts(data || []);
     } catch (error) {
-      console.error("Error fetching products:", error);
-      setError("Failed to load products");
+      console.error("Error searching products:", error);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  function calculateTotals() {
+  // Handle product selection
+  const addProduct = (product: Product) => {
+    if (selectedProducts.some((p) => p.product.id === product.id)) return;
+    setSelectedProducts([...selectedProducts, { product, quantity: 1 }]);
+    setProducts([]);
+    setSearchQuery("");
+  };
+
+  // Handle quantity changes
+  const updateQuantity = (productId: string, change: number) => {
+    setSelectedProducts(
+      selectedProducts.map((item) => {
+        if (item.product.id === productId) {
+          const newQuantity = Math.max(1, item.quantity + change);
+          return { ...item, quantity: newQuantity };
+        }
+        return item;
+      })
+    );
+  };
+
+  // Remove product
+  const removeProduct = (productId: string) => {
+    setSelectedProducts(
+      selectedProducts.filter((item) => item.product.id !== productId)
+    );
+  };
+
+  // Calculate order totals
+  const calculateOrder = (): OrderCalculation => {
     const subtotal = selectedProducts.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+      (sum, item) => sum + item.product.price * item.quantity,
       0
     );
 
     const tax = subtotal * TAX_RATE;
-    const deliveryCost =
-      paymentMethod === "cod"
-        ? DELIVERY_COSTS.cod[region]
-        : DELIVERY_COSTS.postage[region];
+    const transactionFee =
+      paymentMethod === "online" ? subtotal * TRANSACTION_FEE_RATE : 0;
 
-    setCalculation({
+    const rates = DELIVERY_RATES[region];
+    const itemCount = selectedProducts.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+    const deliveryCost =
+      rates.base + Math.max(0, itemCount - 1) * rates.additional;
+
+    const total = subtotal + tax + transactionFee + deliveryCost;
+
+    return {
       subtotal,
       tax,
-      transaction_fee: TRANSACTION_FEE,
+      transaction_fee: transactionFee,
       delivery_cost: deliveryCost,
-      total: subtotal + tax + TRANSACTION_FEE + deliveryCost,
-    });
-  }
+      total,
+    };
+  };
 
-  function handleProductSelect(productId: string, quantity: number) {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
+  // Handle form submission
+  const handleSubmit = () => {
+    if (selectedProducts.length === 0) return;
 
-    setSelectedProducts((prev) => {
-      const existing = prev.find((p) => p.id === productId);
-      if (existing) {
-        return prev.map((p) => (p.id === productId ? { ...p, quantity } : p));
-      }
-      return [...prev, { id: productId, quantity, price: product.price }];
-    });
-  }
+    const calculation = calculateOrder();
+    const orderData: OrderData = {
+      products: selectedProducts.map((item) => ({
+        id: item.product.id,
+        quantity: item.quantity,
+        price: item.product.price,
+        title: item.product.title,
+      })),
+      paymentMethod,
+      region,
+      calculation,
+    };
 
-  function renderStep() {
-    switch (step) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold">Select Products</h2>
-            {products.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-neutral-400">No products available.</p>
-                <p className="text-sm text-neutral-500 mt-2">
-                  Please create some products first.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {products.map((product) => (
-                  <Card key={product.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">{product.title}</h3>
-                        <p className="text-sm text-neutral-400">
-                          SKU: {product.sku}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <p className="font-medium">
-                          RM {product.price.toFixed(2)}
-                        </p>
-                        <Input
-                          type="number"
-                          min="0"
-                          max={product.inventory_quantity}
-                          className="w-20"
-                          value={
-                            selectedProducts.find((p) => p.id === product.id)
-                              ?.quantity || 0
-                          }
-                          onChange={(e) =>
-                            handleProductSelect(
-                              product.id,
-                              parseInt(e.target.value) || 0
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold">Order Details</h2>
-            <div className="space-y-4">
-              <div>
-                <Label>Payment Method</Label>
-                <Select
-                  value={paymentMethod}
-                  onValueChange={(value: "cod" | "online") =>
-                    setPaymentMethod(value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="online">Online Banking/Card</SelectItem>
-                    <SelectItem value="cod">Cash on Delivery</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Region</Label>
-                <Select
-                  value={region}
-                  onValueChange={(value: "peninsular" | "eastMalaysia") =>
-                    setRegion(value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="peninsular">
-                      Peninsular Malaysia
-                    </SelectItem>
-                    <SelectItem value="eastMalaysia">Sabah/Sarawak</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Promo Code (Optional)</Label>
-                <Input
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                  placeholder="Enter promo code"
-                />
-              </div>
-
-              <Card className="p-4">
-                <h3 className="font-medium mb-4">Order Summary</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>RM {calculation.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tax (6%)</span>
-                    <span>RM {calculation.tax.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Transaction Fee</span>
-                    <span>RM {calculation.transaction_fee.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Delivery Cost</span>
-                    <span>RM {calculation.delivery_cost.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-medium pt-2 border-t">
-                    <span>Total</span>
-                    <span>RM {calculation.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  }
-
-  function handleNext() {
-    if (step === 1 && selectedProducts.length === 0) {
-      toast.error("Please select at least one product");
-      return;
-    }
-
-    if (step === 2) {
-      // Prepare final order data
-      const orderData = {
-        products: selectedProducts,
-        payment_method: paymentMethod,
-        region,
-        promo_code: promoCode || null,
-        ...calculation,
-      };
-      onComplete(orderData);
-      return;
-    }
-
-    setStep(step + 1);
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-lg bg-red-500/10 p-4">
-        <div className="flex">
-          <AlertCircle className="h-5 w-5 text-red-400" />
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-400">Error</h3>
-            <div className="mt-2 text-sm text-red-400">{error}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    onComplete(orderData);
+  };
 
   return (
-    <div className="space-y-8">
-      {renderStep()}
+    <div className="space-y-6">
+      {/* Product Search */}
+      <div className="space-y-4">
+        <Label>Search Products</Label>
+        <div className="relative">
+          <Input
+            placeholder="Search products by name..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (e.target.value) searchProducts(e.target.value);
+            }}
+          />
+          {loading && (
+            <div className="absolute right-2 top-2">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+        </div>
 
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={step === 1 ? onCancel : () => setStep(step - 1)}
-        >
-          {step === 1 ? "Cancel" : "Back"}
+        {/* Search Results */}
+        {products.length > 0 && (
+          <Card className="absolute z-10 w-full max-h-60 overflow-auto p-2">
+            {products.map((product) => (
+              <button
+                key={product.id}
+                className="w-full text-left px-4 py-2 hover:bg-accent rounded-md"
+                onClick={() => addProduct(product)}
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">{product.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      SKU: {product.sku}
+                    </p>
+                  </div>
+                  <p className="font-medium">RM {product.price.toFixed(2)}</p>
+                </div>
+              </button>
+            ))}
+          </Card>
+        )}
+      </div>
+
+      {/* Selected Products */}
+      {selectedProducts.length > 0 && (
+        <Card className="p-4">
+          <h3 className="font-medium mb-4">Selected Products</h3>
+          <div className="space-y-4">
+            {selectedProducts.map((item) => (
+              <div
+                key={item.product.id}
+                className="flex items-center justify-between"
+              >
+                <div className="flex-1">
+                  <p className="font-medium">{item.product.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    RM {item.product.price.toFixed(2)} each
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => updateQuantity(item.product.id, -1)}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-8 text-center">{item.quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => updateQuantity(item.product.id, 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => removeProduct(item.product.id)}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Order Settings */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Payment Method</Label>
+          <Select
+            value={paymentMethod}
+            onValueChange={(value: "cod" | "online") => setPaymentMethod(value)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cod">Cash on Delivery</SelectItem>
+              <SelectItem value="online">Online Payment</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Delivery Region</Label>
+          <Select
+            value={region}
+            onValueChange={(value: "peninsular" | "eastMalaysia") =>
+              setRegion(value)
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="peninsular">Peninsular Malaysia</SelectItem>
+              <SelectItem value="eastMalaysia">East Malaysia</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Order Summary */}
+      {selectedProducts.length > 0 && (
+        <Card className="p-4">
+          <h3 className="font-medium mb-4">Order Summary</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>RM {calculateOrder().subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tax (6%)</span>
+              <span>RM {calculateOrder().tax.toFixed(2)}</span>
+            </div>
+            {paymentMethod === "online" && (
+              <div className="flex justify-between">
+                <span>Transaction Fee (2%)</span>
+                <span>RM {calculateOrder().transaction_fee.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span>Delivery</span>
+              <span>RM {calculateOrder().delivery_cost.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-medium pt-2 border-t">
+              <span>Total</span>
+              <span>RM {calculateOrder().total.toFixed(2)}</span>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Actions */}
+      <div className="flex justify-end gap-4">
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
         </Button>
-        <Button onClick={handleNext}>
-          {step === 2 ? "Continue to Customer Details" : "Next"}
+        <Button onClick={handleSubmit} disabled={selectedProducts.length === 0}>
+          Continue
         </Button>
       </div>
     </div>
