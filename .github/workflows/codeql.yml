@@ -85,8 +85,11 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      - name: Install Yarn
+        run: yarn add -g yarn@4.7.0
+
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn add --frozen-lockfile
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL

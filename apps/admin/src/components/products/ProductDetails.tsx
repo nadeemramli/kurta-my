@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { type Product, type ProductStatus } from "@/lib/types/products";
 import { Button } from "@/components/ui/button";
