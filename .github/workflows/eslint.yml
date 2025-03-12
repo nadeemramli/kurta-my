@@ -12,24 +12,26 @@ name: ESLint
 on:
   push:
     branches: ["main"]
-    paths:
-      - "apps/**"
-      - "packages/**"
-      - ".github/workflows/eslint.yml"
-      - "**.js"
-      - "**.jsx"
-      - "**.ts"
-      - "**.tsx"
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.txt"
+      - "yarn.lock"
+      - ".yarn/**"
+      - "**/node_modules/**"
+      - "supabase/config.toml"
+      - "supabase/.branches/**"
+      - "supabase/.temp/**"
   pull_request:
     branches: ["main"]
-    paths:
-      - "apps/**"
-      - "packages/**"
-      - ".github/workflows/eslint.yml"
-      - "**.js"
-      - "**.jsx"
-      - "**.ts"
-      - "**.tsx"
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.txt"
+      - "yarn.lock"
+      - ".yarn/**"
+      - "**/node_modules/**"
+      - "supabase/config.toml"
+      - "supabase/.branches/**"
+      - "supabase/.temp/**"
   schedule:
     - cron: "24 17 * * 6"
 
@@ -62,8 +64,12 @@ jobs:
             --config .eslintrc.js \
             --ext .js,.jsx,.ts,.tsx \
             --ignore-pattern "node_modules/" \
+            --ignore-pattern "packages/auth/node_modules/" \
+            --ignore-pattern ".yarn/" \
+            --ignore-pattern "yarn.lock" \
             --ignore-pattern "dist/" \
             --ignore-pattern ".next/" \
+            --ignore-pattern "supabase/config.toml" \
             --format @microsoft/eslint-formatter-sarif \
             --output-file eslint-results.sarif
         continue-on-error: true

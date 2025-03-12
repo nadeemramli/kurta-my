@@ -1,0 +1,15 @@
+# Dependencies
+/node_modules
+node_modules/
+
+# Build
+/dist
+dist/
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.DS_Store
+.env*
+.cache 

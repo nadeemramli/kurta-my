@@ -9,4 +9,3 @@ export type SupabaseClient = ReturnType<typeof createSupabaseClient>;
 export * from './types';
 export * from './lib/supabase';
 export * from './services/orders';
-export * from './services/analytics'; 

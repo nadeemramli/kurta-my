@@ -7,6 +7,14 @@ out/
 # Dependencies
 node_modules/
 **/node_modules/
+packages/auth/node_modules/
+.yarn/
+.pnp.*
+
+# Package manager files
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
 
 # Generated files
 **/*.d.ts
@@ -17,6 +25,11 @@ coverage/
 packages/*/dist/
 apps/*/dist/
 
+# Supabase files
+supabase/config.toml
+supabase/.branches/
+supabase/.temp/
+
 # Config files
 **/.eslintrc.js
 **/jest.config.js
@@ -26,4 +39,6 @@ apps/*/dist/
 
 # Misc
 .github/
-.vscode/ 
+.vscode/
+.env*
+.cache/ 

@@ -14,16 +14,26 @@ name: "CodeQL Advanced"
 on:
   push:
     branches: ["main"]
-    paths:
-      - "apps/**"
-      - "packages/**"
-      - ".github/workflows/codeql.yml"
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.txt"
+      - "yarn.lock"
+      - ".yarn/**"
+      - "**/node_modules/**"
+      - "supabase/config.toml"
+      - "supabase/.branches/**"
+      - "supabase/.temp/**"
   pull_request:
     branches: ["main"]
-    paths:
-      - "apps/**"
-      - "packages/**"
-      - ".github/workflows/codeql.yml"
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.txt"
+      - "yarn.lock"
+      - ".yarn/**"
+      - "**/node_modules/**"
+      - "supabase/config.toml"
+      - "supabase/.branches/**"
+      - "supabase/.temp/**"
   schedule:
     - cron: "39 11 * * 1"
 
